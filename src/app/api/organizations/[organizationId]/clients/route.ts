@@ -7,7 +7,7 @@ import { clientCreateSchema, clientListQuerySchema } from "@/server/validation/c
 const paramsSchema = z.object({ organizationId: z.uuid() });
 
 export const GET = route<{ organizationId: string }>(async (request, params) => {
-  const user = await requireSessionUser(request);
+  const user = await requireSessionUser();
   const { organizationId } = parseParams(params, paramsSchema);
   const filter = parseQuery(request, clientListQuerySchema);
 
@@ -15,7 +15,7 @@ export const GET = route<{ organizationId: string }>(async (request, params) => 
 });
 
 export const POST = route<{ organizationId: string }>(async (request, params) => {
-  const user = await requireSessionUser(request);
+  const user = await requireSessionUser();
   const { organizationId } = parseParams(params, paramsSchema);
   const data = await parseBody(request, clientCreateSchema);
 

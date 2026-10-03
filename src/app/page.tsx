@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const modules = [
   "Dashboard",
   "Clientes",
@@ -32,12 +34,20 @@ export default function Home() {
             </li>
           ))}
         </ul>
-        <p className="text-sm text-zinc-500">
-          API en desarrollo ·{" "}
-          <a className="underline" href="/api/health">
-            /api/health
-          </a>
-        </p>
+        <div className="flex gap-3 text-sm font-medium">
+          <Link
+            href="/login"
+            className="rounded-md bg-zinc-900 px-4 py-2 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900"
+          >
+            Iniciar sesión
+          </Link>
+          <Link
+            href="/register"
+            className="rounded-md border border-black/[.12] px-4 py-2 hover:bg-black/[.04] dark:border-white/[.15]"
+          >
+            Crear cuenta
+          </Link>
+        </div>
       </main>
     </div>
   );

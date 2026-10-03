@@ -1,30 +1,35 @@
-import { z } from "zod";
-import { getEnv } from "@/config/env";
+import { redirect } from "next/navigation";
+import { cache } from "react";
 import type { SessionUser } from "@/server/domain/user";
 import { UnauthenticatedError } from "@/server/errors/app-error";
 import { userRepository } from "@/server/repositories/user.repository";
-
-export const DEV_USER_HEADER = "x-dev-user-id";
+import { auth } from "./auth";
 
 /**
- * Authentication seam: resolves WHO is calling. Authorization (what they may
- * do) lives in `tenant-access.service.ts`.
+ * Authentication seam: resolves WHO is calling from the Auth.js session.
+ * Authorization (what they may do in an organization) lives in
+ * `tenant-access.service.ts`.
  *
- * TODO(auth): replace the body with the Auth.js session lookup (`auth()`).
- * Until then the only way to authenticate is the development bypass, which is
- * disabled in production, so production requests are always rejected.
+ * The user is re-read from the database so a deleted account loses access
+ * immediately, even with a still-valid token. Memoized per request.
  */
-export async function getSessionUser(request: Request): Promise<SessionUser | null> {
-  if (!getEnv().authDevBypass) return null;
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return null;
+  return userRepository.findById(userId);
+});
 
-  const userId = z.uuid().safeParse(request.headers.get(DEV_USER_HEADER));
-  if (!userId.success) return null;
-
-  return userRepository.findById(userId.data);
+/** For Route Handlers and Server Actions: throws 401 when not signed in. */
+export async function requireSessionUser(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) throw new UnauthenticatedError();
+  return user;
 }
 
-export async function requireSessionUser(request: Request): Promise<SessionUser> {
-  const user = await getSessionUser(request);
-  if (!user) throw new UnauthenticatedError();
+/** For pages: redirects to the login page when not signed in. */
+export async function requirePageUser(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
   return user;
 }

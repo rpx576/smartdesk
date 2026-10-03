@@ -1,11 +1,14 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { hashPassword } from "../src/server/auth/password";
 
 /**
  * Development seed: two organizations with separate users and clients, so
- * tenant isolation can be exercised locally. Ids are fixed to make the
- * `x-dev-user-id` header easy to use. Safe to run repeatedly.
+ * tenant isolation can be exercised locally. Ids are fixed so they are easy
+ * to reference. Safe to run repeatedly.
+ *
+ * Every seeded user gets the password from SEED_USER_PASSWORD (see .env.example).
  */
 const ids = {
   acme: "018f0000-0000-7000-8000-000000000001",
@@ -24,6 +27,11 @@ async function main() {
   if (process.env.NODE_ENV === "production") {
     throw new Error("The development seed must not run in production");
   }
+  const password = process.env.SEED_USER_PASSWORD;
+  if (!password || password.length < 12) {
+    throw new Error("SEED_USER_PASSWORD must be set (at least 12 characters)");
+  }
+  const passwordHash = await hashPassword(password);
 
   const organizations = [
     { id: ids.acme, name: "Acme S.L.", slug: "acme" },
@@ -44,7 +52,11 @@ async function main() {
     { id: ids.globexAdmin, email: "admin@globex.test", name: "Gus Admin", org: ids.globex, role: "ADMIN" },
   ] as const;
   for (const { id, email, name, org, role } of users) {
-    await prisma.user.upsert({ where: { id }, update: {}, create: { id, email, name } });
+    await prisma.user.upsert({
+      where: { id },
+      update: { passwordHash },
+      create: { id, email, name, passwordHash },
+    });
     await prisma.membership.upsert({
       where: { userId_organizationId: { userId: id, organizationId: org } },
       update: { role },
