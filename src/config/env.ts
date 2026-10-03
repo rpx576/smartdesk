@@ -3,14 +3,13 @@ import { z } from "zod";
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-  AUTH_DEV_BYPASS: z.enum(["true", "false"]).default("false"),
+  // Read by Auth.js itself; validated here so a missing secret fails fast.
+  AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
 });
 
 export type Env = {
   nodeEnv: "development" | "test" | "production";
   databaseUrl: string;
-  /** Never enabled in production, whatever the variable says. */
-  authDevBypass: boolean;
 };
 
 let cached: Env | undefined;
@@ -30,11 +29,6 @@ export function getEnv(): Env {
     throw new Error(`Invalid environment configuration: ${problems}`);
   }
 
-  const { NODE_ENV, DATABASE_URL, AUTH_DEV_BYPASS } = parsed.data;
-  cached = {
-    nodeEnv: NODE_ENV,
-    databaseUrl: DATABASE_URL,
-    authDevBypass: NODE_ENV !== "production" && AUTH_DEV_BYPASS === "true",
-  };
+  cached = { nodeEnv: parsed.data.NODE_ENV, databaseUrl: parsed.data.DATABASE_URL };
   return cached;
 }

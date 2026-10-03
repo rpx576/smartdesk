@@ -9,7 +9,7 @@ type Params = { organizationId: string; clientId: string };
 const paramsSchema = z.object({ organizationId: z.uuid(), clientId: z.uuid() });
 
 export const GET = route<Params>(async (request, params) => {
-  const user = await requireSessionUser(request);
+  const user = await requireSessionUser();
   const { organizationId, clientId } = parseParams(params, paramsSchema);
 
   const client = await clientService.get(user, organizationId, clientId);
@@ -17,7 +17,7 @@ export const GET = route<Params>(async (request, params) => {
 });
 
 export const PATCH = route<Params>(async (request, params) => {
-  const user = await requireSessionUser(request);
+  const user = await requireSessionUser();
   const { organizationId, clientId } = parseParams(params, paramsSchema);
   const data = await parseBody(request, clientUpdateSchema);
 
@@ -26,7 +26,7 @@ export const PATCH = route<Params>(async (request, params) => {
 });
 
 export const DELETE = route<Params>(async (request, params) => {
-  const user = await requireSessionUser(request);
+  const user = await requireSessionUser();
   const { organizationId, clientId } = parseParams(params, paramsSchema);
 
   await clientService.delete(user, organizationId, clientId);

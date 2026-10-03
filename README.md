@@ -2,13 +2,14 @@
 
 Plataforma SaaS multi-tenant de gestión para pequeñas empresas: clientes, proyectos, tareas, calendario, documentos, usuarios y roles.
 
-> Estado: base arquitectónica y primer módulo (clientes, solo API). La autenticación real con Auth.js todavía no está integrada.
+> Estado: base arquitectónica, autenticación con Auth.js (registro de empresa, login, logout y dashboard) y primer módulo (clientes, solo API).
 
 ## Stack
 
 - Next.js 16 (App Router, Route Handlers), React 19, TypeScript
 - Tailwind CSS 4
 - PostgreSQL 17 + Prisma 7 (driver adapter `pg`)
+- Auth.js v5 (`next-auth@5`, beta) con credenciales y sesiones JWT
 - Zod para validación
 - Tests con el runner nativo de Node (`node:test`) + `tsx`
 - Docker Compose para la base de datos local
@@ -22,11 +23,11 @@ Plataforma SaaS multi-tenant de gestión para pequeñas empresas: clientes, proy
 
 ```bash
 npm install
-cp .env.example .env      # y cambia POSTGRES_PASSWORD (también dentro de DATABASE_URL)
+cp .env.example .env      # cambia POSTGRES_PASSWORD (también en DATABASE_URL), AUTH_SECRET y SEED_USER_PASSWORD
 npm run db:up             # PostgreSQL en localhost:5433
 npm run db:deploy         # aplica las migraciones
 npm run db:seed           # datos de ejemplo (dos organizaciones)
-npm run dev               # http://localhost:3000
+npm run dev               # http://localhost:3000 (login en /login, alta de empresa en /register)
 ```
 
 ¿Sin Docker? `npx prisma dev` levanta un PostgreSQL local embebido; usa la URL `postgres://…` que imprime como `DATABASE_URL`.
@@ -57,9 +58,9 @@ src/app/api       src/server/services   src/server/repositories
 
 ```
 prisma/                 esquema, migraciones y seed
-src/app/                páginas y Route Handlers
+src/app/                páginas, Server Actions y Route Handlers
 src/config/env.ts       variables de entorno validadas
-src/server/auth/        sesión (autenticación) y matriz de permisos
+src/server/auth/        Auth.js, sesión, contraseñas y matriz de permisos
 src/server/domain/      tipos de dominio
 src/server/errors/      errores de aplicación
 src/server/http/        wrapper de rutas, parsing y respuestas de error
@@ -76,15 +77,28 @@ src/server/validation/  esquemas Zod
 - Los repositorios filtran todas las consultas por `organizationId`.
 - La matriz de permisos está en `src/server/auth/permissions.ts`.
 
-### Autenticación (provisional)
+### Autenticación y autorización
 
-`src/server/auth/session.ts` es el único punto que resuelve quién llama. Hasta integrar Auth.js funciona con un bypass de desarrollo: con `AUTH_DEV_BYPASS=true` el usuario se indica en la cabecera `x-dev-user-id`. El bypass se ignora con `NODE_ENV=production`, así que en producción todas las peticiones protegidas devuelven `401`.
+Están separadas:
+
+- **Autenticación** (quién eres): Auth.js v5 en `src/server/auth/auth.ts`, proveedor de credenciales (email + contraseña) y sesión JWT en cookie `httpOnly` (8 h). El token solo lleva el id del usuario. `src/server/auth/session.ts` es el único punto que resuelve el usuario actual y lo vuelve a leer de la base de datos en cada petición:
+  - `requireSessionUser()` en API y Server Actions (sin sesión: `401`);
+  - `requirePageUser()` en páginas (sin sesión: redirige a `/login`).
+- **Autorización** (qué puedes hacer): `tenantAccessService.authorize()` consulta la membresía y el rol en la organización en cada operación. Los roles no van en el token, así que un cambio de rol se aplica al instante.
+- Contraseñas con `scrypt` (módulo `crypto` de Node, sal aleatoria, comparación en tiempo constante). Con emails inexistentes también se calcula un hash, para no revelar por el tiempo de respuesta qué cuentas existen.
+- `/register` crea una organización nueva con su primer usuario como ADMIN e inicia sesión. Tras el login siempre se va a `/dashboard` (sin redirecciones controladas por el usuario).
+- Las páginas protegidas comprueban la sesión en el servidor (patrón *Data Access Layer* de Next 16); no se usa `proxy.ts`.
+
+Variables: `AUTH_SECRET` (obligatoria, mínimo 32 caracteres; se genera con `npx auth secret`). En producción detrás de un dominio o proxy hace falta `AUTH_URL` o `AUTH_TRUST_HOST=true`.
+
+Pendiente: limitar intentos de login (*rate limiting*), verificación de email, recuperación de contraseña e invitación de usuarios a una organización.
 
 ## API
 
 | Método | Ruta | Permiso |
 | --- | --- | --- |
 | GET | `/api/health` | público |
+| GET/POST | `/api/auth/*` | Auth.js (login, logout, sesión, CSRF) |
 | GET | `/api/organizations` | autenticado |
 | GET | `/api/organizations/{organizationId}/clients?search=&status=&page=&pageSize=` | `client:read` |
 | POST | `/api/organizations/{organizationId}/clients` | `client:write` |
@@ -94,16 +108,14 @@ src/server/validation/  esquemas Zod
 
 Errores: `{ "error": { "code", "message", "details?" } }` con `400`, `401`, `403`, `404`, `409` o `500` (sin detalles internos).
 
-Ejemplo con los datos del seed (admin de Acme):
+Los endpoints usan la cookie de sesión de Auth.js: inicia sesión en `/login` y llama a la API desde el mismo navegador. Las rutas `/api/auth/*` las gestiona Auth.js.
 
-```bash
-curl -H "x-dev-user-id: 018f0000-0000-7000-8000-000000000011" http://localhost:3000/api/organizations/018f0000-0000-7000-8000-000000000001/clients
-```
-
-Usuarios del seed: Acme `…0011` (ADMIN), `…0012` (EMPLOYEE), `…0013` (CLIENT); Globex `…0021` (ADMIN). Organizaciones: Acme `…0001`, Globex `…0002`.
+Usuarios del seed (contraseña: el valor de `SEED_USER_PASSWORD` de tu `.env`): `admin@acme.test` (ADMIN), `employee@acme.test` (EMPLOYEE) y `client@acme.test` (CLIENT) en Acme; `admin@globex.test` (ADMIN) en Globex. Ids de organización: Acme `018f0000-0000-7000-8000-000000000001`, Globex `…0002`.
 
 ## Seguridad
 
 - Los secretos viven en `.env` (ignorado por Git); `.env.example` solo contiene valores de ejemplo.
 - PostgreSQL de desarrollo solo escucha en `127.0.0.1`.
 - Entrada validada con esquemas estrictos: los campos desconocidos (p. ej. `organizationId` en el cuerpo) se rechazan.
+- Sesión en cookie `httpOnly` firmada y cifrada; Auth.js protege login y logout contra CSRF.
+- Los logs de login nunca incluyen contraseñas ni emails.
