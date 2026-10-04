@@ -33,6 +33,11 @@ export type ClientListFilter = {
   pageSize: number;
 };
 
+export type ClientSummary = {
+  total: number;
+  byStatus: Record<ClientStatus, number>;
+};
+
 export type Page<T> = {
   data: T[];
   meta: { total: number; page: number; pageSize: number };

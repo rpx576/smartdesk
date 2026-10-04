@@ -4,6 +4,7 @@ import type {
   Client,
   ClientCreateData,
   ClientListFilter,
+  ClientSummary,
   ClientUpdateData,
 } from "@/server/domain/client";
 import { ConflictError } from "@/server/errors/app-error";
@@ -48,6 +49,26 @@ export const clientRepository = {
       prisma.client.count({ where }),
     ]);
     return { items, total };
+  },
+
+  async summary(organizationId: string): Promise<ClientSummary> {
+    const groups = await getPrisma().client.groupBy({
+      by: ["status"],
+      where: { organizationId },
+      _count: { _all: true },
+    });
+    const byStatus: ClientSummary["byStatus"] = { LEAD: 0, ACTIVE: 0, INACTIVE: 0 };
+    for (const group of groups) byStatus[group.status] = group._count._all;
+    return { total: groups.reduce((sum, group) => sum + group._count._all, 0), byStatus };
+  },
+
+  /** Most recently created clients first. */
+  async listRecent(organizationId: string, limit: number): Promise<Client[]> {
+    return getPrisma().client.findMany({
+      where: { organizationId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit,
+    });
   },
 
   async findById(organizationId: string, id: string): Promise<Client | null> {
