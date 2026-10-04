@@ -2,7 +2,7 @@
 
 Plataforma SaaS multi-tenant de gestión para pequeñas empresas: clientes, proyectos, tareas, calendario, documentos, usuarios y roles.
 
-> Estado: base arquitectónica, autenticación con Auth.js (registro de empresa, login, logout y dashboard) y primer módulo (clientes, solo API).
+> Estado: base arquitectónica, autenticación con Auth.js (registro de empresa, login y logout), dashboard de la aplicación y primer módulo (clientes: API, listado y ficha).
 
 ## Stack
 
@@ -37,7 +37,7 @@ npm run dev               # http://localhost:3000 (login en /login, alta de empr
 | Script | Descripción |
 | --- | --- |
 | `npm run dev` / `build` / `start` | Servidor de desarrollo, build y servidor de producción |
-| `npm run lint` / `typecheck` / `test` | ESLint, `tsc --noEmit`, tests unitarios |
+| `npm run lint` / `typecheck` / `test` | ESLint, tipos de rutas + `tsc --noEmit`, tests unitarios |
 | `npm run db:up` / `db:down` | Arranca / para PostgreSQL (Docker Compose) |
 | `npm run db:migrate` | Crea y aplica una migración en desarrollo |
 | `npm run db:deploy` | Aplica las migraciones existentes |
@@ -58,7 +58,8 @@ src/app/api       src/server/services   src/server/repositories
 
 ```
 prisma/                 esquema, migraciones y seed
-src/app/                páginas, Server Actions y Route Handlers
+src/app/                páginas, Server Actions y Route Handlers ((app)/ = aplicación autenticada)
+src/lib/                utilidades de presentación (formato de fechas, etiquetas)
 src/config/env.ts       variables de entorno validadas
 src/server/auth/        Auth.js, sesión, contraseñas y matriz de permisos
 src/server/domain/      tipos de dominio
@@ -92,6 +93,24 @@ Están separadas:
 Variables: `AUTH_SECRET` (obligatoria, mínimo 32 caracteres; se genera con `npx auth secret`). En producción detrás de un dominio o proxy hace falta `AUTH_URL` o `AUTH_TRUST_HOST=true`.
 
 Pendiente: limitar intentos de login (*rate limiting*), verificación de email, recuperación de contraseña e invitación de usuarios a una organización.
+
+## Frontend de la aplicación
+
+Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que comparte un layout con sidebar (en móvil, un menú lateral basado en `<dialog>`) y cabecera.
+
+| Ruta | Contenido |
+| --- | --- |
+| `/dashboard` | Resumen: clientes (datos reales), proyectos, tareas y documentos (próximamente), clientes recientes, cartera por estado y actividad (pendiente) |
+| `/clients` | Listado de clientes con búsqueda y paginación |
+| `/clients/{id}` | Ficha de un cliente |
+| `/projects`, `/tasks`, `/calendar`, `/documents`, `/settings` | Página «Próximamente» |
+
+- **Organización activa**: `getAppContext()` (`src/server/auth/organization-context.ts`) obtiene el usuario con Auth.js y elige una de **sus** organizaciones. La cookie `sd_active_org` solo guarda la preferencia (se cambia con el selector del sidebar cuando el usuario pertenece a varias); si apunta a una organización de la que no es miembro, se ignora. Además, cada consulta vuelve a pasar por `tenantAccessService.authorize()`.
+- Las páginas llaman a servicios (`dashboardService`, `clientService`), nunca a repositorios. Un usuario con rol `CLIENT` ve el dashboard sin datos de clientes.
+- Estados de UI: `loading.tsx` (esqueletos), `error.tsx` en `(app)` y en la raíz (por ejemplo, base de datos caída), `not-found` para clientes inexistentes o de otra organización, y estados vacíos.
+- Componentes en `src/app/(app)/_components/`; formato de fechas y textos en `src/lib/format.ts` (`es-ES`, zona `Europe/Madrid`). Los colores son tokens CSS (`globals.css`) con modo oscuro.
+
+**Actividad reciente (pendiente).** No existe todavía un modelo de actividad, así que el panel solo muestra un estado vacío. Para hacerlo real falta: una tabla `ActivityEvent` (organización, autor, acción, entidad, metadatos, fecha) escrita por los servicios al crear o cambiar datos, y un método de repositorio/servicio que liste los últimos eventos de una organización.
 
 ## API
 

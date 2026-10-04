@@ -48,6 +48,15 @@ function createFakeClientRepository(store: Client[]): ClientRepository {
       const all = store.filter((c) => c.organizationId === organizationId);
       return { items: all.slice((page - 1) * pageSize, page * pageSize), total: all.length };
     },
+    async summary(organizationId) {
+      const own = store.filter((c) => c.organizationId === organizationId);
+      const byStatus = { LEAD: 0, ACTIVE: 0, INACTIVE: 0 };
+      for (const c of own) byStatus[c.status]++;
+      return { total: own.length, byStatus };
+    },
+    async listRecent(organizationId, limit) {
+      return store.filter((c) => c.organizationId === organizationId).slice(0, limit);
+    },
     async findById(organizationId, id) {
       return find(organizationId, id);
     },

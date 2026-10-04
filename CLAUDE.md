@@ -14,6 +14,9 @@ Multi-tenant SaaS for small businesses. Full-stack Next.js (App Router), Prisma 
 - Validate all input with Zod (`strictObject` for bodies) in `src/server/validation`. Throw `AppError` subclasses; `route()` in `src/server/http/route.ts` turns them into responses.
 - Authentication: Auth.js v5 (credentials + JWT) configured in `src/server/auth/auth.ts`. Resolve the current user only through `src/server/auth/session.ts` (`requireSessionUser` in API/actions, `requirePageUser` in pages). Never put roles in the token; authorization is always `tenantAccess.authorize()` against the DB.
 - Server Actions are entry points like Route Handlers: validate with Zod, call services, never repositories.
+- App pages live in `src/app/(app)/` and get user + active organization from `getAppContext()`. The `sd_active_org` cookie is only a hint validated against memberships; never trust a client-sent organization id without `tenantAccess.authorize()`.
+- Do not pass functions (e.g. icon components) as props from Server to Client Components; let the client component import them.
+- Modules not built yet show `ComingSoon`; never fake persisted data in the UI.
 - Passwords: `src/server/auth/password.ts` (scrypt). Never log passwords or emails.
 - Read env through `getEnv()` (lazy), never `process.env` directly in app code.
 - Never commit `.env`. Do not create Azure infrastructure unless asked.
