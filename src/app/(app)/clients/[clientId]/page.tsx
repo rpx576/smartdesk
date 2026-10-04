@@ -4,12 +4,16 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { z } from "zod";
 import { formatDate } from "@/lib/format";
+import { roleHasPermission } from "@/server/auth/permissions";
 import { getAppContext } from "@/server/auth/organization-context";
 import { ForbiddenError, NotFoundError } from "@/server/errors/app-error";
 import { clientService } from "@/server/services/client.service";
-import { ArrowLeftIcon, LockIcon } from "../../_components/icons";
+import { ArrowLeftIcon, LockIcon, PencilIcon } from "../../_components/icons";
 import { NoOrganization } from "../../_components/no-organization";
-import { Card, CardHeader, EmptyState, StatusBadge } from "../../_components/ui";
+import { buttonClass, Card, CardHeader, EmptyState, StatusBadge } from "../../_components/ui";
+import { DeleteClientButton } from "../_components/delete-client-button";
+import { Notice } from "../_components/notice";
+import { noticeMessage } from "../form-data";
 
 export const metadata: Metadata = { title: "Cliente · SmartDesk" };
 
@@ -24,7 +28,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-export default async function ClientDetailPage({ params }: PageProps<"/clients/[clientId]">) {
+export default async function ClientDetailPage({
+  params,
+  searchParams,
+}: PageProps<"/clients/[clientId]">) {
   const { clientId } = await params;
   if (!z.uuid().safeParse(clientId).success) notFound();
 
@@ -49,8 +56,14 @@ export default async function ClientDetailPage({ params }: PageProps<"/clients/[
     );
   }
 
+  // UI hints only; the server authorizes edit/delete again.
+  const canWrite = roleHasPermission(organization.role, "client:write");
+  const canDelete = roleHasPermission(organization.role, "client:delete");
+  const notice = noticeMessage((await searchParams).notice);
+
   return (
     <>
+      {notice && <Notice message={notice} />}
       <Link
         href="/clients"
         className="mb-4 inline-flex items-center gap-1.5 rounded text-sm font-medium text-ink-muted outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-accent"
@@ -58,14 +71,31 @@ export default async function ClientDetailPage({ params }: PageProps<"/clients/[
         <ArrowLeftIcon className="size-4" />
         Clientes
       </Link>
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">{client.name}</h1>
-        <StatusBadge status={client.status} />
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <h1 className="break-words text-2xl font-semibold tracking-tight text-ink">{client.name}</h1>
+          <StatusBadge status={client.status} />
+        </div>
+        {(canWrite || canDelete) && (
+          <div className="flex gap-2">
+            {canWrite && (
+              <Link href={`/clients/${client.id}/edit`} className={buttonClass.secondary}>
+                <PencilIcon className="size-4" />
+                Editar
+              </Link>
+            )}
+            {canDelete && <DeleteClientButton clientId={client.id} clientName={client.name} />}
+          </div>
+        )}
       </div>
 
       <Card>
         <CardHeader title="Datos del cliente" />
         <dl className="divide-y divide-line">
+          <Field label="Nombre">{client.name}</Field>
+          <Field label="Estado">
+            <StatusBadge status={client.status} />
+          </Field>
           <Field label="Empresa">{client.company}</Field>
           <Field label="Email">
             {client.email && (

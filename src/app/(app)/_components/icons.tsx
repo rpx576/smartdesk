@@ -137,6 +137,33 @@ export const AlertIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const PlusIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 5v14M5 12h14" />
+  </Icon>
+);
+
+export const PencilIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M15.5 5.5 18.5 8.5" />
+    <path d="M4.5 19.5 5.25 15.75 15.75 5.25a2.1 2.1 0 0 1 3 3L8.25 18.75Z" />
+  </Icon>
+);
+
+export const TrashIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4.5 7h15M9.5 7V5.25A1.25 1.25 0 0 1 10.75 4h2.5a1.25 1.25 0 0 1 1.25 1.25V7" />
+    <path d="M6.5 7l.85 11.6A1.5 1.5 0 0 0 8.85 20h6.3a1.5 1.5 0 0 0 1.5-1.4L17.5 7M10.25 11v5M13.75 11v5" />
+  </Icon>
+);
+
+export const CheckCircleIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="8.25" />
+    <path d="m8.5 12.25 2.4 2.4 4.6-5" />
+  </Icon>
+);
+
 export const SparkIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />

@@ -101,14 +101,25 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 | Ruta | Contenido |
 | --- | --- |
 | `/dashboard` | Resumen: clientes (datos reales), proyectos, tareas y documentos (próximamente), clientes recientes, cartera por estado y actividad (pendiente) |
-| `/clients` | Listado de clientes con búsqueda y paginación |
-| `/clients/{id}` | Ficha de un cliente |
+| `/clients` | Listado de clientes con búsqueda, paginación y acciones Ver / Editar / Eliminar |
+| `/clients/new` | Alta de cliente (ADMIN y EMPLOYEE) |
+| `/clients/{id}` | Ficha de un cliente, con Editar y (solo ADMIN) Eliminar |
+| `/clients/{id}/edit` | Edición de cliente (ADMIN y EMPLOYEE) |
 | `/projects`, `/tasks`, `/calendar`, `/documents`, `/settings` | Página «Próximamente» |
 
 - **Organización activa**: `getAppContext()` (`src/server/auth/organization-context.ts`) obtiene el usuario con Auth.js y elige una de **sus** organizaciones. La cookie `sd_active_org` solo guarda la preferencia (se cambia con el selector del sidebar cuando el usuario pertenece a varias); si apunta a una organización de la que no es miembro, se ignora. Además, cada consulta vuelve a pasar por `tenantAccessService.authorize()`.
 - Las páginas llaman a servicios (`dashboardService`, `clientService`), nunca a repositorios. Un usuario con rol `CLIENT` ve el dashboard sin datos de clientes.
 - Estados de UI: `loading.tsx` (esqueletos), `error.tsx` en `(app)` y en la raíz (por ejemplo, base de datos caída), `not-found` para clientes inexistentes o de otra organización, y estados vacíos.
 - Componentes en `src/app/(app)/_components/`; formato de fechas y textos en `src/lib/format.ts` (`es-ES`, zona `Europe/Madrid`). Los colores son tokens CSS (`globals.css`) con modo oscuro.
+
+### CRUD de clientes desde la interfaz
+
+- Crear, editar y eliminar usan **Server Actions** (`src/app/(app)/clients/actions.ts`), que siguen el mismo camino que la API: validan con los esquemas Zod de `src/server/validation/client.schema.ts` y llaman a `clientService`, que autoriza con `tenantAccessService.authorize()`. Ni las páginas ni las acciones tocan repositorios o Prisma.
+- La organización sale siempre de `getAppContext()` (servidor). Del formulario solo se leen los campos del cliente (`readClientForm`); un `organizationId` enviado por el navegador se descarta. El id del cliente que llega en la acción se trata como no fiable: se valida y el servicio lo busca dentro de la organización activa (otro tenant ⇒ «no encontrado»).
+- Permisos: ADMIN crea, edita y elimina; EMPLOYEE crea y edita; CLIENT no ve ni modifica clientes. La interfaz oculta lo que no se puede hacer, pero el servidor lo rechaza igualmente (probado llamando a las acciones directamente).
+- Formularios: validación en el servidor con mensajes en español, se conservan los valores tras un error, el foco va al primer campo inválido, botón desactivado mientras se guarda (sin dobles envíos). Los errores inesperados muestran un mensaje genérico y el detalle solo queda en el log del servidor.
+- Eliminar pide confirmación en un `<dialog>` (el foco empieza en «Cancelar») e indica que no se puede deshacer.
+- Tras crear, editar o eliminar se redirige con `?notice=created|updated|deleted`, que muestra un aviso de éxito y se quita de la URL. Las redirecciones del listado se construyen en el servidor a partir de búsqueda y página validadas (sin redirecciones abiertas).
 
 **Actividad reciente (pendiente).** No existe todavía un modelo de actividad, así que el panel solo muestra un estado vacío. Para hacerlo real falta: una tabla `ActivityEvent` (organización, autor, acción, entidad, metadatos, fecha) escrita por los servicios al crear o cambiar datos, y un método de repositorio/servicio que liste los últimos eventos de una organización.
 
