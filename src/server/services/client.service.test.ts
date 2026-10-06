@@ -131,6 +131,31 @@ describe("clientService", () => {
       const created = await service.create(employee, ORG_A, { name: "Gamma" });
       assert.equal(created.organizationId, ORG_A);
     });
+
+    it("does not let a member of B act on A's client by pairing it with B's organization id", async () => {
+      // The outsider is ADMIN of B and knows the id of A's client.
+      await assert.rejects(service.get(outsider, ORG_B, "c-1"), NotFoundError);
+      await assert.rejects(service.update(outsider, ORG_B, "c-1", { name: "Hacked" }), NotFoundError);
+      await assert.rejects(service.delete(outsider, ORG_B, "c-1"), NotFoundError);
+      assert.equal(store.find((c) => c.id === "c-1")?.name, "Alpha");
+    });
+
+    it("rejects non-members on every write with 404 and leaves data untouched", async () => {
+      await assert.rejects(service.update(outsider, ORG_A, "c-1", { name: "Hacked" }), NotFoundError);
+      await assert.rejects(service.delete(outsider, ORG_A, "c-1"), NotFoundError);
+      assert.deepEqual(
+        store.map((c) => [c.id, c.name]),
+        [
+          ["c-1", "Alpha"],
+          ["c-2", "Beta"],
+        ],
+      );
+    });
+
+    it("keeps updated clients in their organization", async () => {
+      const updated = await service.update(admin, ORG_A, "c-1", { name: "Renamed", status: "INACTIVE" });
+      assert.equal(updated.organizationId, ORG_A);
+    });
   });
 
   describe("role permissions", () => {
@@ -152,7 +177,18 @@ describe("clientService", () => {
 
     it("denies the CLIENT role any access to the client directory", async () => {
       await assert.rejects(service.list(clientUser, ORG_A, page), ForbiddenError);
+      await assert.rejects(service.get(clientUser, ORG_A, "c-1"), ForbiddenError);
       await assert.rejects(service.create(clientUser, ORG_A, { name: "X" }), ForbiddenError);
+      await assert.rejects(service.update(clientUser, ORG_A, "c-1", { name: "X" }), ForbiddenError);
+      await assert.rejects(service.delete(clientUser, ORG_A, "c-1"), ForbiddenError);
+      assert.equal(store.length, 2);
+      assert.equal(store[0].name, "Alpha");
+    });
+
+    it("checks the permission before looking the client up (no existence oracle)", async () => {
+      // An employee gets 403 for delete whether or not the id exists.
+      await assert.rejects(service.delete(employee, ORG_A, "c-1"), ForbiddenError);
+      await assert.rejects(service.delete(employee, ORG_A, "does-not-exist"), ForbiddenError);
     });
   });
 

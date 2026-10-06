@@ -29,7 +29,43 @@ describe("clientCreateSchema", () => {
   });
 });
 
+describe("validation messages", () => {
+  const messageFor = (input: unknown, field: string) =>
+    clientCreateSchema.safeParse(input).error?.issues.find((issue) => issue.path[0] === field)?.message;
+
+  it("explains errors in Spanish", () => {
+    assert.equal(messageFor({ name: "" }, "name"), "El nombre es obligatorio");
+    assert.equal(messageFor({}, "name"), "El nombre es obligatorio");
+    assert.equal(messageFor({ name: "A", email: "nope" }, "email"), "Introduce un email válido");
+    assert.equal(messageFor({ name: "A", status: "X" }, "status"), "Selecciona un estado válido");
+    assert.equal(messageFor({ name: "x".repeat(201) }, "name"), "Máximo 200 caracteres");
+  });
+});
+
 describe("clientUpdateSchema", () => {
+  it("accepts a full form submission and clears emptied fields", () => {
+    const result = clientUpdateSchema.parse({
+      name: " Acme ",
+      email: "",
+      phone: "",
+      company: "Acme S.L.",
+      status: "ACTIVE",
+      notes: "",
+    });
+    assert.deepEqual(result, {
+      name: "Acme",
+      email: null,
+      phone: null,
+      company: "Acme S.L.",
+      status: "ACTIVE",
+      notes: null,
+    });
+  });
+
+  it("rejects an attempt to move a client to another organization", () => {
+    assert.equal(clientUpdateSchema.safeParse({ name: "A", organizationId: "other" }).success, false);
+  });
+
   it("accepts partial updates", () => {
     assert.deepEqual(clientUpdateSchema.parse({ status: "INACTIVE" }), { status: "INACTIVE" });
   });
