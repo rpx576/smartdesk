@@ -1,6 +1,21 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildProjectWhere, paginationArgs } from "./project.repository";
+import { buildProjectWhere, countsByProject, paginationArgs } from "./project.repository";
+
+describe("countsByProject", () => {
+  it("folds one grouped query into task counts per project (no N+1)", () => {
+    const counts = countsByProject([
+      { projectId: "p1", status: "COMPLETED", _count: { _all: 6 } },
+      { projectId: "p1", status: "TODO", _count: { _all: 4 } },
+      { projectId: "p2", status: "CANCELLED", _count: { _all: 2 } },
+    ]);
+    assert.equal(counts.get("p1")?.COMPLETED, 6);
+    assert.equal(counts.get("p1")?.TODO, 4);
+    assert.equal(counts.get("p1")?.BLOCKED, 0);
+    assert.equal(counts.get("p2")?.CANCELLED, 2);
+    assert.equal(counts.has("p3"), false);
+  });
+});
 
 const ORG = "org-a";
 

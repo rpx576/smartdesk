@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   if (!organization) return <NoOrganization />;
 
   // Tenant and role checks happen inside the service, against the database.
-  const { clients } = await dashboardService.getOverview(user, organization.id);
+  const { clients, projects, tasks } = await dashboardService.getOverview(user, organization.id);
   const now = new Date();
   const firstName = user.name?.split(" ")[0] ?? user.email;
 
@@ -60,8 +60,28 @@ export default async function DashboardPage() {
         ) : (
           <StatCard label="Clientes" icon={LockIcon} value="—" footer="Tu rol no tiene acceso a clientes" />
         )}
-        <StatCard label="Proyectos activos" icon={FolderIcon} comingSoon footer="Módulo de proyectos en desarrollo" href="/projects" />
-        <StatCard label="Tareas pendientes" icon={CheckSquareIcon} comingSoon footer="Módulo de tareas en desarrollo" href="/tasks" />
+        {projects ? (
+          <StatCard
+            label="Proyectos activos"
+            icon={FolderIcon}
+            value={formatNumber(projects.ACTIVE)}
+            footer={`${pluralize(projects.PLANNING, "en planificación", "en planificación")} · ${pluralize(projects.ON_HOLD, "en pausa", "en pausa")}`}
+            href="/projects?status=ACTIVE"
+          />
+        ) : (
+          <StatCard label="Proyectos activos" icon={LockIcon} value="—" footer="Tu rol no tiene acceso a proyectos" />
+        )}
+        {tasks ? (
+          <StatCard
+            label="Tareas pendientes"
+            icon={CheckSquareIcon}
+            value={formatNumber(tasks.open)}
+            footer={`${pluralize(tasks.overdue, "vencida", "vencidas")} · ${pluralize(tasks.completed, "completada", "completadas")}`}
+            href="/tasks"
+          />
+        ) : (
+          <StatCard label="Tareas pendientes" icon={LockIcon} value="—" footer="Tu rol no tiene acceso a tareas" />
+        )}
         <StatCard label="Documentos" icon={DocumentIcon} comingSoon footer="Módulo de documentos en desarrollo" href="/documents" />
       </section>
 

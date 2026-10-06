@@ -125,6 +125,26 @@ async function main() {
     await prisma.project.upsert({ where: { id: project.id }, update: {}, create: project });
   }
 
+  // Tasks: several statuses, priorities, assignees and projects. Fixed ids keep
+  // the seed reproducible; `update: {}` never overwrites changes made by hand.
+  const task = (n: number) => `018f0000-0000-7000-8000-${String(300 + n).padStart(12, "0")}`;
+  const tasks = [
+    { id: task(1), organizationId: ids.acme, projectId: ids.acmeWebsite, assigneeId: ids.acmeAdmin, title: "Definir catálogo y fichas de producto", status: "COMPLETED", priority: "HIGH", startDate: day("2026-09-01"), dueDate: day("2026-09-15"), estimatedHours: 16, actualHours: 18, completedAt: new Date("2026-09-14T16:30:00.000Z") },
+    { id: task(2), organizationId: ids.acme, projectId: ids.acmeWebsite, assigneeId: ids.acmeEmployee, title: "Diseño de la home y del carrito", status: "COMPLETED", priority: "MEDIUM", startDate: day("2026-09-10"), dueDate: day("2026-09-30"), estimatedHours: 24, actualHours: 22, completedAt: new Date("2026-09-29T10:00:00.000Z") },
+    { id: task(3), organizationId: ids.acme, projectId: ids.acmeWebsite, assigneeId: ids.acmeEmployee, title: "Integrar la pasarela de pago", status: "IN_PROGRESS", priority: "CRITICAL", startDate: day("2026-10-01"), dueDate: day("2026-10-20"), estimatedHours: 32, actualHours: 10 },
+    { id: task(4), organizationId: ids.acme, projectId: ids.acmeWebsite, assigneeId: ids.acmeAdmin, title: "Revisar textos legales y cookies", status: "IN_REVIEW", priority: "MEDIUM", dueDate: day("2026-10-10") },
+    { id: task(5), organizationId: ids.acme, projectId: ids.acmeWebsite, assigneeId: ids.acmeEmployee, title: "Migrar pedidos del sistema antiguo", status: "BLOCKED", priority: "HIGH", dueDate: day("2026-10-01"), description: "Pendiente de que el cliente envíe la exportación de pedidos." },
+    { id: task(6), organizationId: ids.acme, projectId: ids.acmeWebsite, assigneeId: ids.acmeAdmin, title: "App móvil nativa", status: "CANCELLED", priority: "LOW", description: "Descartada: la web será responsive." },
+    { id: task(7), organizationId: ids.acme, projectId: ids.acmeMaintenance, assigneeId: ids.acmeEmployee, title: "Inventario de equipos del taller", status: "TODO", priority: "MEDIUM", startDate: day("2027-01-10"), dueDate: day("2027-01-24"), estimatedHours: 6 },
+    { id: task(8), organizationId: ids.acme, projectId: ids.acmeMaintenance, assigneeId: ids.acmeAdmin, title: "Calendario de revisiones preventivas", status: "TODO", priority: "LOW", dueDate: day("2027-02-01") },
+    { id: task(9), organizationId: ids.globex, projectId: ids.globexMigration, assigneeId: ids.globexAdmin, title: "Auditoría de servidores actuales", status: "IN_PROGRESS", priority: "CRITICAL", dueDate: day("2026-10-31") },
+    { id: task(10), organizationId: ids.globex, projectId: ids.globexMigration, assigneeId: ids.globexAdmin, title: "Plan de migración por fases", status: "TODO", priority: "HIGH" },
+  ] as const;
+  for (const data of tasks) {
+    // Seeded tasks are created by their assignee.
+    await prisma.task.upsert({ where: { id: data.id }, update: {}, create: { ...data, createdById: data.assigneeId } });
+  }
+
   console.log("Seed completed", ids);
 }
 

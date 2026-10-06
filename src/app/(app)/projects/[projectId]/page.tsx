@@ -3,29 +3,41 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { z } from "zod";
+import { todayCalendarDate } from "@/lib/dates";
 import { formatCurrency, formatDate, formatDay, formatHours } from "@/lib/format";
 import { getAppContext } from "@/server/auth/organization-context";
-import { projectCapabilities } from "@/server/auth/permissions";
+import { projectCapabilities, taskCapabilities } from "@/server/auth/permissions";
 import { ForbiddenError, NotFoundError } from "@/server/errors/app-error";
 import { projectService } from "@/server/services/project.service";
+import { taskService } from "@/server/services/task.service";
 import { ConfirmDeleteButton } from "../../_components/confirm-delete-button";
-import { ArrowLeftIcon, LockIcon, PencilIcon } from "../../_components/icons";
+import { ArrowLeftIcon, CheckSquareIcon, LockIcon, PencilIcon, PlusIcon } from "../../_components/icons";
 import { NoOrganization } from "../../_components/no-organization";
 import { Notice } from "../../_components/notice";
 import { buttonClass, Card, CardHeader, EmptyState } from "../../_components/ui";
+import { TasksTable } from "../../tasks/_components/tasks-table";
 import { deleteProject } from "../actions";
 import {
-  PROGRESS_HINT,
   ProgressBar,
   ProjectPriorityBadge,
   ProjectStatusBadge,
+  progressHint,
 } from "../_components/project-badges";
 import { noticeMessage } from "../form-data";
 
 export const metadata: Metadata = { title: "Proyecto · SmartDesk" };
 
-/** Sections planned for later phases; only "Resumen" exists today. */
-const SECTIONS = ["Resumen", "Tareas", "Calendario", "Documentos", "Equipo", "Actividad"] as const;
+/** Project sections: summary and tasks exist; the rest are planned for later phases. */
+const SECTIONS = [
+  { label: "Resumen", href: "#resumen" },
+  { label: "Tareas", href: "#tareas" },
+  { label: "Calendario" },
+  { label: "Documentos" },
+  { label: "Equipo" },
+  { label: "Actividad" },
+] as const;
+
+const PROJECT_TASKS_LIMIT = 100;
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -68,8 +80,13 @@ export default async function ProjectDetailPage({
 
   // UI hints only; the server authorizes edit/delete again.
   const { canWrite, canDelete } = projectCapabilities(organization.role);
+  const taskCaps = taskCapabilities(organization.role);
   const notice = noticeMessage((await searchParams).notice);
   const owner = project.createdBy ? (project.createdBy.name ?? project.createdBy.email) : null;
+  // Same tenant and permission checks as the task list (one query for the whole section).
+  const tasks = taskCaps.canRead
+    ? await taskService.listForProject(user, organization.id, project.id, PROJECT_TASKS_LIMIT)
+    : null;
 
   return (
     <>
@@ -110,33 +127,39 @@ export default async function ProjectDetailPage({
                 itemName={project.name}
                 title="¿Eliminar este proyecto?"
                 confirmLabel="Eliminar proyecto"
+                consequence="También se eliminarán todas sus tareas. Esta acción no se puede deshacer."
               />
             )}
           </div>
         )}
       </div>
 
-      {/* Placeholder navigation for upcoming modules; only the summary exists today. */}
+      {/* Section navigation: summary and tasks are on this page; the rest come in later phases. */}
       <nav aria-label="Secciones del proyecto" className="mb-6 overflow-x-auto border-b border-line">
         <ul className="flex min-w-max gap-1">
           {SECTIONS.map((section) =>
-            section === "Resumen" ? (
-              <li key={section}>
-                <span
-                  aria-current="page"
-                  className="inline-block border-b-2 border-accent px-3 py-2.5 text-sm font-semibold text-accent"
+            "href" in section ? (
+              <li key={section.label}>
+                <a
+                  href={section.href}
+                  className="inline-block border-b-2 border-transparent px-3 py-2.5 text-sm font-semibold text-ink-muted outline-none hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  {section}
-                </span>
+                  {section.label}
+                  {section.label === "Tareas" && tasks && (
+                    <span className="ml-1.5 rounded-full bg-surface-muted px-1.5 py-px text-[11px] tabular-nums text-ink-muted">
+                      {tasks.length}
+                    </span>
+                  )}
+                </a>
               </li>
             ) : (
-              <li key={section}>
+              <li key={section.label}>
                 <span
                   aria-disabled="true"
                   title="Próximamente"
                   className="inline-flex cursor-not-allowed items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-ink-subtle"
                 >
-                  {section}
+                  {section.label}
                   <span className="rounded-full border border-line px-1.5 py-px text-[10px] uppercase tracking-wide">
                     Pronto
                   </span>
@@ -148,7 +171,8 @@ export default async function ProjectDetailPage({
       </nav>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className="min-w-0 scroll-mt-20 lg:col-span-2">
+          <div id="resumen" className="scroll-mt-20" />
           <CardHeader title="Resumen" />
           <dl className="divide-y divide-line">
             <Field label="Descripción">
@@ -177,17 +201,59 @@ export default async function ProjectDetailPage({
           </dl>
         </Card>
 
-        <Card className="h-fit">
-          <CardHeader title="Progreso" description="Se calculará a partir de las tareas" />
+        <Card className="h-fit min-w-0">
+          <CardHeader title="Progreso" description="Tareas completadas sobre el total (sin contar canceladas)" />
           <div className="px-5 py-4">
-            <ProgressBar value={project.progress} hint={PROGRESS_HINT} />
+            <ProgressBar value={project.progress} hint={progressHint(project)} />
             <p className="mt-3 text-xs text-ink-muted">
-              Este proyecto todavía no tiene tareas. El progreso se actualizará cuando el módulo de
-              tareas esté disponible.
+              {project.taskStats.considered === 0
+                ? "Este proyecto todavía no tiene tareas."
+                : `${progressHint(project).replace(/^./, (c) => c.toUpperCase())}.`}
             </p>
           </div>
         </Card>
       </div>
+
+      {tasks && (
+        <section id="tareas" aria-labelledby="project-tasks" className="mt-6 scroll-mt-20">
+          <Card className="min-w-0">
+            <CardHeader
+              id="project-tasks"
+              title="Tareas"
+              description={`Trabajo de este proyecto${tasks.length >= PROJECT_TASKS_LIMIT ? ` (primeras ${PROJECT_TASKS_LIMIT})` : ""}`}
+              action={
+                taskCaps.canWrite ? (
+                  <Link href={`/tasks/new?projectId=${project.id}`} className={buttonClass.primary}>
+                    <PlusIcon className="size-4" />
+                    Crear tarea
+                  </Link>
+                ) : undefined
+              }
+            />
+            {tasks.length === 0 ? (
+              <EmptyState
+                icon={CheckSquareIcon}
+                title="Este proyecto todavía no tiene tareas"
+                description="Divide el trabajo en tareas y asígnalas a tu equipo para seguir el progreso."
+              />
+            ) : (
+              <>
+                <TasksTable
+                  tasks={tasks}
+                  today={todayCalendarDate()}
+                  caption={`Tareas del proyecto ${project.name}`}
+                  showProject={false}
+                />
+                <div className="border-t border-line px-5 py-3 text-sm">
+                  <Link href={`/tasks?projectId=${project.id}`} className={buttonClass.ghost}>
+                    Ver en el listado de tareas
+                  </Link>
+                </div>
+              </>
+            )}
+          </Card>
+        </section>
+      )}
     </>
   );
 }

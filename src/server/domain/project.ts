@@ -23,11 +23,10 @@ export type Project = {
   client: { id: string; name: string };
   /** The user who created the project; shown as the person in charge for now. */
   createdBy: { id: string; name: string | null; email: string } | null;
-  /**
-   * Completion percentage. There is no tasks module yet, so it is always 0:
-   * nothing is invented. It will be derived from the project's tasks later.
-   */
+  /** Completion percentage, derived from the project's tasks (see `computeProgress`). */
   progress: number;
+  /** Task numbers behind `progress`: completed vs. tasks that count (cancelled excluded). */
+  taskStats: { completed: number; considered: number };
 };
 
 export type ProjectCreateData = {

@@ -15,7 +15,7 @@ import { tenantAccessService, type TenantAccessService } from "./tenant-access.s
 export const CLIENT_NOT_IN_ORGANIZATION = "Selecciona un cliente de tu organización";
 
 export function createProjectService(deps: {
-  projectRepository: ProjectRepository;
+  projectRepository: Pick<ProjectRepository, "list" | "findById" | "create" | "update" | "delete">;
   clientRepository: Pick<ClientRepository, "findById" | "listOptions">;
   tenantAccess: TenantAccessService;
 }) {

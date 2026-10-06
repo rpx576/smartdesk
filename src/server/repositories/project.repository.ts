@@ -4,8 +4,16 @@ import type {
   Project,
   ProjectCreateData,
   ProjectListFilter,
+  ProjectStatus,
   ProjectUpdateData,
 } from "@/server/domain/project";
+import {
+  computeProgress,
+  emptyTaskCounts,
+  type ProjectOption,
+  type TaskCounts,
+  type TaskStatus,
+} from "@/server/domain/task";
 import { ValidationError } from "@/server/errors/app-error";
 
 function isPrismaError(error: unknown, code: string) {
@@ -21,14 +29,47 @@ type ProjectRow = Prisma.ProjectGetPayload<{ include: typeof projectInclude }>;
 
 const toNumber = (value: Prisma.Decimal | null) => (value === null ? null : value.toNumber());
 
-function toDomain(row: ProjectRow): Project {
+function toDomain(row: ProjectRow, counts: TaskCounts): Project {
+  const { percent, completed, considered } = computeProgress(counts);
   return {
     ...row,
     budget: toNumber(row.budget),
     estimatedHours: toNumber(row.estimatedHours),
-    // No tasks module yet: real progress will be computed from tasks later.
-    progress: 0,
+    progress: percent,
+    taskStats: { completed, considered },
   };
+}
+
+/** Folds `groupBy(projectId, status)` rows into task counts per project. */
+export function countsByProject(
+  groups: { projectId: string; status: TaskStatus; _count: { _all: number } }[],
+): Map<string, TaskCounts> {
+  const result = new Map<string, TaskCounts>();
+  for (const { projectId, status, _count } of groups) {
+    const counts = result.get(projectId) ?? emptyTaskCounts();
+    counts[status] += _count._all;
+    result.set(projectId, counts);
+  }
+  return result;
+}
+
+/**
+ * Task counts for a set of projects with ONE grouped query (no N+1), scoped
+ * to the organization like every other query here.
+ */
+async function taskCountsFor(organizationId: string, projectIds: string[]): Promise<Map<string, TaskCounts>> {
+  if (projectIds.length === 0) return new Map();
+  const groups = await getPrisma().task.groupBy({
+    by: ["projectId", "status"],
+    where: { organizationId, projectId: { in: projectIds } },
+    _count: { _all: true },
+  });
+  return countsByProject(groups);
+}
+
+async function withProgress(organizationId: string, rows: ProjectRow[]): Promise<Project[]> {
+  const counts = await taskCountsFor(organizationId, rows.map((row) => row.id));
+  return rows.map((row) => toDomain(row, counts.get(row.id) ?? emptyTaskCounts()));
 }
 
 /**
@@ -84,7 +125,7 @@ export const projectRepository = {
       }),
       prisma.project.count({ where }),
     ]);
-    return { items: rows.map(toDomain), total };
+    return { items: await withProgress(organizationId, rows), total };
   },
 
   async findById(organizationId: string, id: string): Promise<Project | null> {
@@ -92,7 +133,34 @@ export const projectRepository = {
       where: { id, organizationId },
       include: projectInclude,
     });
-    return row ? toDomain(row) : null;
+    return row ? (await withProgress(organizationId, [row]))[0] : null;
+  },
+
+  /** Cheap existence check inside the organization (no includes). */
+  async existsInOrganization(organizationId: string, id: string): Promise<boolean> {
+    const row = await getPrisma().project.findFirst({ where: { id, organizationId }, select: { id: true } });
+    return row !== null;
+  },
+
+  /** Projects of the organization for selectors, with their client's name. */
+  async listOptions(organizationId: string): Promise<ProjectOption[]> {
+    const rows = await getPrisma().project.findMany({
+      where: { organizationId },
+      select: { id: true, name: true, client: { select: { name: true } } },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+    });
+    return rows.map(({ id, name, client }) => ({ id, name, clientName: client.name }));
+  },
+
+  async countByStatus(organizationId: string): Promise<Record<ProjectStatus, number>> {
+    const groups = await getPrisma().project.groupBy({
+      by: ["status"],
+      where: { organizationId },
+      _count: { _all: true },
+    });
+    const counts: Record<ProjectStatus, number> = { PLANNING: 0, ACTIVE: 0, ON_HOLD: 0, COMPLETED: 0, CANCELLED: 0 };
+    for (const group of groups) counts[group.status] = group._count._all;
+    return counts;
   },
 
   async create(
@@ -105,7 +173,8 @@ export const projectRepository = {
         data: { ...data, organizationId, createdById },
         include: projectInclude,
       });
-      return toDomain(row);
+      // A new project has no tasks yet.
+      return toDomain(row, emptyTaskCounts());
     } catch (error) {
       if (isPrismaError(error, "P2003")) throw new ValidationError(CLIENT_MISMATCH);
       throw error;
@@ -124,7 +193,7 @@ export const projectRepository = {
         data,
         include: projectInclude,
       });
-      return toDomain(row);
+      return (await withProgress(organizationId, [row]))[0];
     } catch (error) {
       if (isPrismaError(error, "P2025")) return null;
       if (isPrismaError(error, "P2003")) throw new ValidationError(CLIENT_MISMATCH);
@@ -132,7 +201,7 @@ export const projectRepository = {
     }
   },
 
-  /** Returns false when the project does not exist in this organization. */
+  /** Returns false when the project does not exist in this organization. Its tasks are deleted too. */
   async delete(organizationId: string, id: string): Promise<boolean> {
     const { count } = await getPrisma().project.deleteMany({ where: { id, organizationId } });
     return count > 0;

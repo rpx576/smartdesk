@@ -1,5 +1,6 @@
-import { projectPriorityLabels, projectStatusLabels } from "@/lib/format";
-import type { ProjectPriority, ProjectStatus } from "@/server/domain/project";
+import { projectStatusLabels } from "@/lib/format";
+import type { Project, ProjectStatus } from "@/server/domain/project";
+import { PriorityBadge } from "../../_components/priority-badge";
 
 const statusStyles: Record<ProjectStatus, string> = {
   PLANNING: "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300",
@@ -17,26 +18,10 @@ export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
   );
 }
 
-const priorityDots: Record<ProjectPriority, string> = {
-  LOW: "bg-ink-subtle/60",
-  MEDIUM: "bg-sky-500",
-  HIGH: "bg-amber-500",
-  CRITICAL: "bg-danger",
-};
+/** Projects and tasks share the same priority scale and badge. */
+export const ProjectPriorityBadge = PriorityBadge;
 
-export function ProjectPriorityBadge({ priority }: { priority: ProjectPriority }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-ink-muted">
-      <span className={`size-2 rounded-full ${priorityDots[priority]}`} aria-hidden="true" />
-      {projectPriorityLabels[priority]}
-    </span>
-  );
-}
-
-/**
- * Completion bar. Progress comes from the project (always 0 until the tasks
- * module exists); `hint` explains where the number comes from.
- */
+/** Completion bar; `hint` explains where the number comes from. */
 export function ProgressBar({ value, hint }: { value: number; hint?: string }) {
   const percent = Math.max(0, Math.min(100, Math.round(value)));
   return (
@@ -56,4 +41,8 @@ export function ProgressBar({ value, hint }: { value: number; hint?: string }) {
   );
 }
 
-export const PROGRESS_HINT = "sin tareas todavía";
+/** "6 de 10 tareas completadas" (cancelled tasks are not counted) or "sin tareas". */
+export function progressHint({ taskStats }: Pick<Project, "taskStats">): string {
+  if (taskStats.considered === 0) return "sin tareas";
+  return `${taskStats.completed} de ${taskStats.considered} ${taskStats.considered === 1 ? "tarea completada" : "tareas completadas"}`;
+}

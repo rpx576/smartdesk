@@ -54,12 +54,25 @@ const service = createDashboardService({
         .slice(0, limit);
     },
   },
+  projectRepository: {
+    async countByStatus(organizationId) {
+      calls.push(`projects:${organizationId}`);
+      return { PLANNING: 1, ACTIVE: 3, ON_HOLD: 0, COMPLETED: 2, CANCELLED: 0 };
+    },
+  },
+  taskRepository: {
+    async summary(organizationId, today) {
+      calls.push(`tasks:${organizationId}:${today.toISOString().slice(0, 10)}`);
+      return { open: 5, overdue: 2, completed: 4 };
+    },
+  },
   tenantAccess: createTenantAccessService({
     membershipRepository: {
       find: async (userId, organizationId) =>
         memberships.find((m) => m.userId === userId && m.organizationId === organizationId) ?? null,
     },
   }),
+  today: () => new Date("2026-10-07T00:00:00.000Z"),
 });
 
 describe("dashboardService.getOverview", () => {
@@ -81,10 +94,19 @@ describe("dashboardService.getOverview", () => {
     assert.deepEqual(calls, []);
   });
 
-  it("gives the CLIENT role the page but no client directory", async () => {
+  it("gives the CLIENT role the page but no clients, projects or tasks", async () => {
     calls.length = 0;
     const overview = await service.getOverview(user("client-a"), "org-a");
-    assert.deepEqual(overview, { role: "CLIENT", clients: null });
+    assert.deepEqual(overview, { role: "CLIENT", clients: null, projects: null, tasks: null });
     assert.deepEqual(calls, []);
+  });
+
+  it("fills project and task figures for the organization, using today's calendar date", async () => {
+    calls.length = 0;
+    const overview = await service.getOverview(user("admin-a"), "org-a");
+    assert.equal(overview.projects?.ACTIVE, 3);
+    assert.deepEqual(overview.tasks, { open: 5, overdue: 2, completed: 4 });
+    assert.ok(calls.includes("projects:org-a"));
+    assert.ok(calls.includes("tasks:org-a:2026-10-07"));
   });
 });
