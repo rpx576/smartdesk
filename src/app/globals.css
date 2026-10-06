@@ -5,7 +5,7 @@
   --foreground: #171717;
 
   /* App shell design tokens (light) */
-  --canvas: #f5f6f8;
+  --canvas: #dbeafe;
   --surface: #ffffff;
   --surface-muted: #f0f2f5;
   --line: #e3e6eb;
@@ -45,7 +45,7 @@
     --background: #0a0a0a;
     --foreground: #ededed;
 
-    --canvas: #0c0e12;
+    --canvas: #0b1a33;
     --surface: #14171c;
     --surface-muted: #1b1f26;
     --line: #262b33;
