@@ -39,6 +39,7 @@ describe("projectToFormValues", () => {
       client: { id: CLIENT, name: "Acme" },
       createdBy: null,
       progress: 0,
+      taskStats: { completed: 0, considered: 0 },
     });
     assert.deepEqual(values, {
       name: "Web",

@@ -14,3 +14,6 @@ export type Membership = {
 
 /** An organization together with the caller's role in it. */
 export type OrganizationWithRole = Organization & { role: Role };
+
+/** A user of an organization, with their role there. */
+export type OrganizationMember = { id: string; name: string | null; email: string; role: Role };

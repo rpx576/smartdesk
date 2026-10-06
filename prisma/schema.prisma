@@ -34,6 +34,22 @@ enum ProjectPriority {
   CRITICAL
 }
 
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  BLOCKED
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 /// Tenant root. Every business record belongs to exactly one organization.
 model Organization {
   id        String   @id @default(uuid(7)) @db.Uuid
@@ -45,6 +61,7 @@ model Organization {
   memberships Membership[]
   clients     Client[]
   projects    Project[]
+  tasks       Task[]
 
   @@map("organizations")
 }
@@ -63,6 +80,8 @@ model User {
 
   memberships     Membership[]
   createdProjects Project[]    @relation("ProjectCreatedBy")
+  assignedTasks   Task[]       @relation("TaskAssignee")
+  createdTasks    Task[]       @relation("TaskCreatedBy")
 
   @@map("users")
 }
@@ -78,6 +97,8 @@ model Membership {
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// Tasks assigned to this member (same-tenant guarantee for Task.assignee).
+  assignedTasks Task[]
 
   @@unique([userId, organizationId])
   @@index([organizationId])
@@ -131,10 +152,55 @@ model Project {
   /// deleting a whole organization still cascades (checked at statement end).
   client       Client       @relation(fields: [clientId, organizationId], references: [id, organizationId], onDelete: NoAction)
   createdBy    User?        @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  tasks        Task[]
 
+  /// Target of the composite foreign key from Task (same-tenant guarantee).
+  @@unique([id, organizationId])
   @@index([organizationId, createdAt])
   @@index([organizationId, status])
   @@index([organizationId, clientId])
   @@index([createdById])
   @@map("projects")
+}
+
+/// A unit of work inside a project, assigned to one member of the organization.
+/// Prepared for comments, subtasks, attachments, time tracking and activity later.
+model Task {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  projectId      String       @map("project_id") @db.Uuid
+  title          String
+  description    String?
+  status         TaskStatus   @default(TODO)
+  priority       TaskPriority @default(MEDIUM)
+  assigneeId     String       @map("assignee_id") @db.Uuid
+  /// Null only if the creating user is deleted later.
+  createdById    String?      @map("created_by_id") @db.Uuid
+  /// Calendar dates (no time), stored as UTC midnight.
+  startDate      DateTime?    @map("start_date") @db.Date
+  dueDate        DateTime?    @map("due_date") @db.Date
+  /// Set by the service when the task becomes COMPLETED, cleared otherwise.
+  completedAt    DateTime?    @map("completed_at")
+  estimatedHours Decimal?     @map("estimated_hours") @db.Decimal(8, 2)
+  actualHours    Decimal?     @map("actual_hours") @db.Decimal(8, 2)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// Composite key: the database rejects a project from another organization.
+  /// Deleting a project deletes its tasks.
+  project            Project      @relation(fields: [projectId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  assignee           User         @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: NoAction)
+  /// Composite key to the membership: the assignee must be a member of the task's
+  /// organization. NoAction: a member with tasks cannot be removed until the tasks
+  /// are reassigned (deleting the whole organization still cascades).
+  assigneeMembership Membership   @relation(fields: [assigneeId, organizationId], references: [userId, organizationId], onDelete: NoAction)
+  createdBy          User?        @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, projectId, status])
+  @@index([organizationId, assigneeId])
+  @@index([organizationId, status, dueDate])
+  @@index([createdById])
+  @@map("tasks")
 }

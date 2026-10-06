@@ -1,5 +1,6 @@
 import type { ClientStatus } from "@/server/domain/client";
 import type { ProjectPriority, ProjectStatus } from "@/server/domain/project";
+import type { TaskPriority, TaskSort, TaskStatus } from "@/server/domain/task";
 import type { Role } from "@/server/domain/role";
 
 // Fixed locale and time zone so server-rendered dates do not depend on the host.
@@ -72,6 +73,43 @@ export const projectPriorityLabels: Record<ProjectPriority, string> = {
   HIGH: "Alta",
   CRITICAL: "Crítica",
 };
+
+export const taskStatusLabels: Record<TaskStatus, string> = {
+  TODO: "Pendiente",
+  IN_PROGRESS: "En curso",
+  IN_REVIEW: "En revisión",
+  BLOCKED: "Bloqueada",
+  COMPLETED: "Completada",
+  CANCELLED: "Cancelada",
+};
+
+/** Same scale as projects. */
+export const taskPriorityLabels: Record<TaskPriority, string> = projectPriorityLabels;
+
+export const taskSortLabels: Record<TaskSort, string> = {
+  recent: "Más recientes",
+  due: "Fecha límite",
+  priority: "Prioridad",
+};
+
+const dateTimeFormatter = new Intl.DateTimeFormat(LOCALE, {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: TIME_ZONE,
+});
+
+/** A moment in time (e.g. when a task was completed), in the business time zone. */
+export function formatDateTime(date: Date): string {
+  return dateTimeFormatter.format(date);
+}
+
+/** "Ana Admin" or, when the user has no name, their email. */
+export function personLabel(person: { name: string | null; email: string } | null): string | null {
+  return person ? (person.name ?? person.email) : null;
+}
 
 export function formatDate(date: Date): string {
   return dateFormatter.format(date);

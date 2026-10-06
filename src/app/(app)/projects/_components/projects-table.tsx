@@ -4,7 +4,7 @@ import type { Project } from "@/server/domain/project";
 import { ConfirmDeleteButton } from "../../_components/confirm-delete-button";
 import { ArrowRightIcon, PencilIcon } from "../../_components/icons";
 import { deleteProject } from "../actions";
-import { PROGRESS_HINT, ProgressBar, ProjectPriorityBadge, ProjectStatusBadge } from "./project-badges";
+import { ProgressBar, ProjectPriorityBadge, ProjectStatusBadge, progressHint } from "./project-badges";
 
 type Props = {
   projects: Project[];
@@ -87,7 +87,7 @@ export function ProjectsTable({ projects, actions, listState }: Props) {
                 )}
               </td>
               <td className="hidden px-5 py-3.5 xl:table-cell">
-                <ProgressBar value={project.progress} hint={PROGRESS_HINT} />
+                <ProgressBar value={project.progress} hint={progressHint(project)} />
               </td>
               <td className="px-3 py-3.5 text-right sm:px-5">
                 <div className="flex items-center justify-end gap-0.5">

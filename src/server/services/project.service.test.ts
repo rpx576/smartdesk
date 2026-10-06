@@ -58,12 +58,15 @@ function makeProject(organizationId: string, clientId: string, name: string, ext
     client: { id: client.id, name: client.name },
     createdBy: null,
     progress: 0,
+    taskStats: { completed: 0, considered: 0 },
     ...extra,
   };
 }
 
 /** In-memory repository honouring the same contract (tenant scope, filters, paging). */
-function createFakeProjectRepository(store: Project[]): ProjectRepository {
+function createFakeProjectRepository(
+  store: Project[],
+): Pick<ProjectRepository, "list" | "findById" | "create" | "update" | "delete"> {
   const find = (organizationId: string, id: string) =>
     store.find((p) => p.id === id && p.organizationId === organizationId) ?? null;
 

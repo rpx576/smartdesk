@@ -100,19 +100,23 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 
 | Ruta | Contenido |
 | --- | --- |
-| `/dashboard` | Resumen: clientes (datos reales), proyectos, tareas y documentos (próximamente), clientes recientes, cartera por estado y actividad (pendiente) |
+| `/dashboard` | Resumen con datos reales: clientes, proyectos activos, tareas pendientes (vencidas y completadas); documentos (próximamente), clientes recientes, cartera por estado y actividad (pendiente) |
 | `/clients` | Listado de clientes con búsqueda, paginación y acciones Ver / Editar / Eliminar |
 | `/clients/new` | Alta de cliente (ADMIN y EMPLOYEE) |
 | `/clients/{id}` | Ficha de un cliente, con Editar y (solo ADMIN) Eliminar |
 | `/clients/{id}/edit` | Edición de cliente (ADMIN y EMPLOYEE) |
 | `/projects` | Listado de proyectos con búsqueda (proyecto o cliente), filtros (estado, prioridad, cliente) y paginación |
 | `/projects/new` | Alta de proyecto (ADMIN y EMPLOYEE) |
-| `/projects/{id}` | Ficha del proyecto (Resumen; Tareas, Calendario, Documentos, Equipo y Actividad «Próximamente»), con Editar y (solo ADMIN) Eliminar |
+| `/projects/{id}` | Ficha del proyecto: resumen, progreso real y sección «Tareas» con «Crear tarea» (Calendario, Documentos, Equipo y Actividad «Próximamente»), con Editar y (solo ADMIN) Eliminar |
 | `/projects/{id}/edit` | Edición de proyecto (ADMIN y EMPLOYEE) |
-| `/tasks`, `/calendar`, `/documents`, `/settings` | Página «Próximamente» |
+| `/tasks` | Listado de tareas: búsqueda (tarea o proyecto), filtros (proyecto, responsable, estado, prioridad, rango de fecha límite), orden (recientes, fecha límite, prioridad) y paginación |
+| `/tasks/new` | Alta de tarea (ADMIN y EMPLOYEE); `?projectId=` preselecciona un proyecto propio |
+| `/tasks/{id}` | Ficha de la tarea con gestión rápida (estado, prioridad, responsable), Editar y (solo ADMIN) Eliminar |
+| `/tasks/{id}/edit` | Edición de tarea (ADMIN y EMPLOYEE) |
+| `/calendar`, `/documents`, `/settings` | Página «Próximamente» |
 
 - **Organización activa**: `getAppContext()` (`src/server/auth/organization-context.ts`) obtiene el usuario con Auth.js y elige una de **sus** organizaciones. La cookie `sd_active_org` solo guarda la preferencia (se cambia con el selector del sidebar cuando el usuario pertenece a varias); si apunta a una organización de la que no es miembro, se ignora. Además, cada consulta vuelve a pasar por `tenantAccessService.authorize()`.
-- Las páginas llaman a servicios (`dashboardService`, `clientService`, `projectService`), nunca a repositorios. Un usuario con rol `CLIENT` ve el dashboard sin datos de clientes.
+- Las páginas llaman a servicios (`dashboardService`, `clientService`, `projectService`, `taskService`), nunca a repositorios. Un usuario con rol `CLIENT` ve el dashboard sin datos de clientes.
 - Estados de UI: `loading.tsx` (esqueletos), `error.tsx` en `(app)` y en la raíz (por ejemplo, base de datos caída), `not-found` para clientes inexistentes o de otra organización, y estados vacíos.
 - Componentes en `src/app/(app)/_components/`; formato de fechas y textos en `src/lib/format.ts` (`es-ES`, zona `Europe/Madrid`). Los colores son tokens CSS (`globals.css`) con modo oscuro.
 
@@ -132,8 +136,20 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 - Un cliente con proyectos no se puede eliminar (la base de datos lo impide y la interfaz lo explica); hay que eliminar o reasignar antes sus proyectos. Borrar una organización entera sí elimina sus proyectos.
 - Permisos `project:read`, `project:write` (ADMIN, EMPLOYEE) y `project:delete` (solo ADMIN) en `src/server/auth/permissions.ts`; CLIENT no tiene acceso al CRUD.
 - Mismo patrón que Clientes: Server Actions en `src/app/(app)/projects/actions.ts`, Route Handlers en `/api/organizations/{organizationId}/projects`, servicio `projectService` y repositorio `projectRepository` (único que usa Prisma).
-- El **progreso** se muestra como 0 % porque todavía no existen tareas: no se inventa. Se calculará a partir de las tareas cuando exista ese módulo.
+- El **progreso** se calcula en servidor a partir de las tareas: `COMPLETED / (todas las tareas − CANCELLED)`. Las canceladas son trabajo descartado y no cuentan ni como hechas ni como pendientes; TODO, IN_PROGRESS, IN_REVIEW y BLOCKED cuentan como pendientes. Sin tareas (o solo canceladas) = 0 %. El listado obtiene los recuentos de todos sus proyectos con una sola consulta agrupada (sin N+1).
+- Eliminar un proyecto elimina también sus tareas (el diálogo de confirmación lo advierte).
 - Importes y horas aceptan coma o punto decimal (máximo dos decimales, sin separador de miles).
+
+### Tareas
+
+- Modelo `Task`: pertenece a una organización, a un proyecto, a un responsable (`assignee`) y a su creador (`createdBy`, tomado siempre de la sesión). Estado (`TaskStatus`: TODO, IN_PROGRESS, IN_REVIEW, BLOCKED, COMPLETED, CANCELLED) y prioridad (`TaskPriority`) son enums; fechas de inicio y límite como `DATE`; horas estimadas y reales como `DECIMAL(8,2)`. Preparado para comentarios, subtareas, adjuntos, control de tiempo y actividad en fases posteriores.
+- **Aislamiento en tres capas**, como en Proyectos: el servicio comprueba que el proyecto y el responsable pertenecen a la organización activa; el repositorio filtra todo por `organizationId`; y la base de datos tiene dos claves foráneas compuestas: `(project_id, organization_id)` → `projects(id, organization_id)` y `(assignee_id, organization_id)` → `memberships(user_id, organization_id)`. PostgreSQL rechaza así una tarea de un proyecto ajeno o asignada a alguien que no es miembro, aunque fallara el código.
+- **Responsable**: debe existir, ser miembro de la organización y tener un rol con `task:assignable` (ADMIN o EMPLOYEE; los usuarios CLIENT son externos y no pueden ser responsables). Un miembro con tareas asignadas no se puede eliminar de la organización hasta reasignarlas.
+- **`completedAt`** lo calcula el servicio: se fija al pasar a COMPLETED, se conserva mientras siga completada y se borra si vuelve a otro estado. Nunca se acepta del navegador.
+- **Fechas**: igual que en Proyectos (fechas de calendario a medianoche UTC, sin desfases). «Vencida» = tarea abierta con fecha límite anterior al día de hoy en `Europe/Madrid` (`src/lib/dates.ts`).
+- Permisos `task:read`, `task:write` (crear, editar, cambiar estado/prioridad, asignar; ADMIN y EMPLOYEE) y `task:delete` (solo ADMIN). CLIENT no tiene acceso. La interfaz usa `taskCapabilities(role)`.
+- Server Actions en `src/app/(app)/tasks/actions.ts`: `createTask`, `updateTask`, `changeTaskStatus`, `changeTaskPriority`, `assignTask` y `deleteTask`. Las tres de cambio rápido comparten el mismo camino que `updateTask` (validación, tenant, permisos y servicio).
+- **Dashboard**: «Tareas pendientes» (abiertas, con vencidas y completadas) y «Proyectos activos» muestran datos reales según los permisos del rol.
 
 **Actividad reciente (pendiente).** No existe todavía un modelo de actividad, así que el panel solo muestra un estado vacío. Para hacerlo real falta: una tabla `ActivityEvent` (organización, autor, acción, entidad, metadatos, fecha) escrita por los servicios al crear o cambiar datos, y un método de repositorio/servicio que liste los últimos eventos de una organización.
 
@@ -153,7 +169,14 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 | POST | `/api/organizations/{organizationId}/projects` | `project:write` |
 | GET | `/api/organizations/{organizationId}/projects/{projectId}` | `project:read` |
 | PATCH | `/api/organizations/{organizationId}/projects/{projectId}` | `project:write` |
-| DELETE | `/api/organizations/{organizationId}/projects/{projectId}` | `project:delete` (solo ADMIN) |
+| DELETE | `/api/organizations/{organizationId}/projects/{projectId}` | `project:delete` (solo ADMIN); borra también sus tareas |
+| GET | `/api/organizations/{organizationId}/tasks?search=&status=&priority=&projectId=&assigneeId=&dueFrom=&dueTo=&sort=&page=&pageSize=` | `task:read` |
+| POST | `/api/organizations/{organizationId}/tasks` | `task:write` |
+| GET | `/api/organizations/{organizationId}/tasks/{taskId}` | `task:read` |
+| PATCH | `/api/organizations/{organizationId}/tasks/{taskId}` | `task:write` (también estado, prioridad o responsable por separado) |
+| DELETE | `/api/organizations/{organizationId}/tasks/{taskId}` | `task:delete` (solo ADMIN) |
+
+El `organizationId` de la URL solo selecciona la organización: el servicio comprueba en base de datos que quien llama es miembro de ella antes de tocar ningún dato (si no lo es, `404`).
 
 Errores: `{ "error": { "code", "message", "details?" } }` con `400`, `401`, `403`, `404`, `409` o `500` (sin detalles internos).
 
