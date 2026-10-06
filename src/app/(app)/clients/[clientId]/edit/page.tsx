@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { roleHasPermission } from "@/server/auth/permissions";
+import { clientCapabilities } from "@/server/auth/permissions";
 import { getAppContext } from "@/server/auth/organization-context";
 import { ForbiddenError, NotFoundError } from "@/server/errors/app-error";
 import { clientService } from "@/server/services/client.service";
@@ -30,7 +30,7 @@ export default async function EditClientPage({ params }: PageProps<"/clients/[cl
 
   const { user, organization } = await getAppContext();
   if (!organization) return <NoOrganization />;
-  if (!roleHasPermission(organization.role, "client:write")) return forbidden;
+  if (!clientCapabilities(organization.role).canWrite) return forbidden;
 
   let client;
   try {

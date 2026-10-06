@@ -1,0 +1,26 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { clientCapabilities, roleHasPermission } from "./permissions";
+
+describe("clientCapabilities (what the clients UI offers)", () => {
+  it("lets ADMIN see create, edit and delete actions", () => {
+    assert.deepEqual(clientCapabilities("ADMIN"), { canRead: true, canWrite: true, canDelete: true });
+  });
+
+  it("lets EMPLOYEE create and edit but not delete", () => {
+    assert.deepEqual(clientCapabilities("EMPLOYEE"), { canRead: true, canWrite: true, canDelete: false });
+  });
+
+  it("gives CLIENT no access to the client directory", () => {
+    assert.deepEqual(clientCapabilities("CLIENT"), { canRead: false, canWrite: false, canDelete: false });
+  });
+
+  it("matches the permission matrix the services enforce", () => {
+    for (const role of ["ADMIN", "EMPLOYEE", "CLIENT"] as const) {
+      const caps = clientCapabilities(role);
+      assert.equal(caps.canRead, roleHasPermission(role, "client:read"));
+      assert.equal(caps.canWrite, roleHasPermission(role, "client:write"));
+      assert.equal(caps.canDelete, roleHasPermission(role, "client:delete"));
+    }
+  });
+});

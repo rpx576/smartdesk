@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { z } from "zod";
 import { formatDate } from "@/lib/format";
-import { roleHasPermission } from "@/server/auth/permissions";
+import { clientCapabilities } from "@/server/auth/permissions";
 import { getAppContext } from "@/server/auth/organization-context";
 import { ForbiddenError, NotFoundError } from "@/server/errors/app-error";
 import { clientService } from "@/server/services/client.service";
@@ -57,8 +57,7 @@ export default async function ClientDetailPage({
   }
 
   // UI hints only; the server authorizes edit/delete again.
-  const canWrite = roleHasPermission(organization.role, "client:write");
-  const canDelete = roleHasPermission(organization.role, "client:delete");
+  const { canWrite, canDelete } = clientCapabilities(organization.role);
   const notice = noticeMessage((await searchParams).notice);
 
   return (
