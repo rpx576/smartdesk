@@ -1,4 +1,5 @@
 import type { ClientStatus } from "@/server/domain/client";
+import type { ProjectPriority, ProjectStatus } from "@/server/domain/project";
 import type { Role } from "@/server/domain/role";
 
 // Fixed locale and time zone so server-rendered dates do not depend on the host.
@@ -26,6 +27,51 @@ const hourFormatter = new Intl.DateTimeFormat(LOCALE, {
 });
 
 const numberFormatter = new Intl.NumberFormat(LOCALE);
+
+// Calendar dates (project start/due) are stored as UTC midnight: format them
+// in UTC so the day never shifts with the time zone.
+const dayFormatter = new Intl.DateTimeFormat(LOCALE, {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+const currencyFormatter = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "EUR" });
+const decimalFormatter = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 });
+
+/** Calendar date without time (e.g. a project's due date). */
+export function formatDay(date: Date): string {
+  return dayFormatter.format(date);
+}
+
+/** `YYYY-MM-DD`, the value format of `<input type="date">`. */
+export function toDateInputValue(date: Date | null): string {
+  return date ? date.toISOString().slice(0, 10) : "";
+}
+
+export function formatCurrency(value: number): string {
+  return currencyFormatter.format(value);
+}
+
+export function formatHours(value: number): string {
+  return `${decimalFormatter.format(value)} h`;
+}
+
+export const projectStatusLabels: Record<ProjectStatus, string> = {
+  PLANNING: "Planificación",
+  ACTIVE: "Activo",
+  ON_HOLD: "En pausa",
+  COMPLETED: "Completado",
+  CANCELLED: "Cancelado",
+};
+
+export const projectPriorityLabels: Record<ProjectPriority, string> = {
+  LOW: "Baja",
+  MEDIUM: "Media",
+  HIGH: "Alta",
+  CRITICAL: "Crítica",
+};
 
 export function formatDate(date: Date): string {
   return dateFormatter.format(date);

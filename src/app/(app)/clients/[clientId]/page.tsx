@@ -12,7 +12,7 @@ import { ArrowLeftIcon, LockIcon, PencilIcon } from "../../_components/icons";
 import { NoOrganization } from "../../_components/no-organization";
 import { buttonClass, Card, CardHeader, EmptyState, StatusBadge } from "../../_components/ui";
 import { DeleteClientButton } from "../_components/delete-client-button";
-import { Notice } from "../_components/notice";
+import { Notice } from "../../_components/notice";
 import { noticeMessage } from "../form-data";
 
 export const metadata: Metadata = { title: "Cliente · SmartDesk" };

@@ -1,6 +1,6 @@
 import { FormSkeleton } from "../../_components/form-skeleton";
 
-export default function NewClientLoading() {
+export default function NewProjectLoading() {
   return (
     <div className="mx-auto max-w-3xl">
       <FormSkeleton label="Cargando formulario…" />

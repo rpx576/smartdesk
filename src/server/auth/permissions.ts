@@ -9,6 +9,9 @@ const PERMISSIONS = {
   "client:read": ["ADMIN", "EMPLOYEE"],
   "client:write": ["ADMIN", "EMPLOYEE"],
   "client:delete": ["ADMIN"],
+  "project:read": ["ADMIN", "EMPLOYEE"],
+  "project:write": ["ADMIN", "EMPLOYEE"],
+  "project:delete": ["ADMIN"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -29,5 +32,16 @@ export function clientCapabilities(role: Role): ClientCapabilities {
     canRead: roleHasPermission(role, "client:read"),
     canWrite: roleHasPermission(role, "client:write"),
     canDelete: roleHasPermission(role, "client:delete"),
+  };
+}
+
+export type ProjectCapabilities = ClientCapabilities;
+
+/** Same idea as `clientCapabilities`, for the projects UI. */
+export function projectCapabilities(role: Role): ProjectCapabilities {
+  return {
+    canRead: roleHasPermission(role, "project:read"),
+    canWrite: roleHasPermission(role, "project:write"),
+    canDelete: roleHasPermission(role, "project:delete"),
   };
 }

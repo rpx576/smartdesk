@@ -150,7 +150,9 @@ export function ClientForm({ action, initial, submitLabel, pendingLabel, cancelH
           </Field>
           <Field name="status" label="Estado" errors={errors?.status}>
             {(props) => (
-              <select {...props} name="status" defaultValue={value("status") || "ACTIVE"} className={inputClass}>
+              // Keyed by value: React applies a <select> defaultValue only on mount and resets
+              // the form to it after each action, which would drop the user's choice.
+              <select key={value("status")} {...props} name="status" defaultValue={value("status") || "ACTIVE"} className={inputClass}>
                 {CLIENT_STATUSES.map((status) => (
                   <option key={status} value={status}>
                     {clientStatusLabels[status]}

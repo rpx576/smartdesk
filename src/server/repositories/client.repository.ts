@@ -5,6 +5,7 @@ import type {
   ClientCreateData,
   ClientListFilter,
   ClientSummary,
+  ClientOption,
   ClientUpdateData,
 } from "@/server/domain/client";
 import { ConflictError } from "@/server/errors/app-error";
@@ -14,6 +15,7 @@ function isPrismaError(error: unknown, code: string) {
 }
 
 const EMAIL_CONFLICT = "A client with this email already exists";
+export const CLIENT_HAS_PROJECTS = "The client has projects and cannot be deleted";
 
 /**
  * Every method takes `organizationId` and includes it in the query, so a
@@ -71,6 +73,15 @@ export const clientRepository = {
     });
   },
 
+  /** Id and name of every client in the organization, for selectors. */
+  async listOptions(organizationId: string): Promise<ClientOption[]> {
+    return getPrisma().client.findMany({
+      where: { organizationId },
+      select: { id: true, name: true },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+    });
+  },
+
   async findById(organizationId: string, id: string): Promise<Client | null> {
     return getPrisma().client.findFirst({ where: { id, organizationId } });
   },
@@ -95,10 +106,18 @@ export const clientRepository = {
     }
   },
 
-  /** Returns false when the client does not exist in this organization. */
+  /**
+   * Returns false when the client does not exist in this organization. Throws
+   * ConflictError while the client still has projects (the database blocks it).
+   */
   async delete(organizationId: string, id: string): Promise<boolean> {
-    const { count } = await getPrisma().client.deleteMany({ where: { id, organizationId } });
-    return count > 0;
+    try {
+      const { count } = await getPrisma().client.deleteMany({ where: { id, organizationId } });
+      return count > 0;
+    } catch (error) {
+      if (isPrismaError(error, "P2003")) throw new ConflictError(CLIENT_HAS_PROJECTS);
+      throw error;
+    }
   },
 };
 

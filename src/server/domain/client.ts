@@ -33,6 +33,9 @@ export type ClientListFilter = {
   pageSize: number;
 };
 
+/** Minimal client data for selectors. */
+export type ClientOption = { id: string; name: string };
+
 export type ClientSummary = {
   total: number;
   byStatus: Record<ClientStatus, number>;

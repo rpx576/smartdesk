@@ -17,6 +17,9 @@ const ids = {
   acmeEmployee: "018f0000-0000-7000-8000-000000000012",
   acmeClient: "018f0000-0000-7000-8000-000000000013",
   globexAdmin: "018f0000-0000-7000-8000-000000000021",
+  acmeWebsite: "018f0000-0000-7000-8000-000000000101",
+  acmeMaintenance: "018f0000-0000-7000-8000-000000000102",
+  globexMigration: "018f0000-0000-7000-8000-000000000201",
 };
 
 const prisma = new PrismaClient({
@@ -69,14 +72,57 @@ async function main() {
     { organizationId: ids.acme, name: "Talleres Martín", email: "info@talleresmartin.test", status: "LEAD" },
     { organizationId: ids.globex, name: "Initech", email: "hello@initech.test", company: "Initech LLC" },
   ] as const;
+  const clientIds: Record<string, string> = {};
   for (const client of clients) {
-    await prisma.client.upsert({
+    const saved = await prisma.client.upsert({
       where: {
         organizationId_email: { organizationId: client.organizationId, email: client.email },
       },
       update: {},
       create: client,
     });
+    clientIds[client.email] = saved.id;
+  }
+
+  const day = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+  const projects = [
+    {
+      id: ids.acmeWebsite,
+      organizationId: ids.acme,
+      clientId: clientIds["contacto@bodegasrioja.test"],
+      createdById: ids.acmeAdmin,
+      name: "Nueva tienda online",
+      description: "Tienda online para la venta directa de vinos con pasarela de pago.",
+      status: "ACTIVE",
+      priority: "HIGH",
+      startDate: day("2026-09-01"),
+      dueDate: day("2026-12-15"),
+      budget: 18500,
+      estimatedHours: 320,
+    },
+    {
+      id: ids.acmeMaintenance,
+      organizationId: ids.acme,
+      clientId: clientIds["info@talleresmartin.test"],
+      createdById: ids.acmeEmployee,
+      name: "Plan de mantenimiento anual",
+      status: "PLANNING",
+      priority: "MEDIUM",
+      startDate: day("2027-01-10"),
+    },
+    {
+      id: ids.globexMigration,
+      organizationId: ids.globex,
+      clientId: clientIds["hello@initech.test"],
+      createdById: ids.globexAdmin,
+      name: "Migración a la nube",
+      status: "ACTIVE",
+      priority: "CRITICAL",
+      budget: 42000,
+    },
+  ] as const;
+  for (const project of projects) {
+    await prisma.project.upsert({ where: { id: project.id }, update: {}, create: project });
   }
 
   console.log("Seed completed", ids);

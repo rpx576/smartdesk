@@ -20,7 +20,7 @@ export type NavItem = {
 export const mainNavigation: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: HomeIcon },
   { href: "/clients", label: "Clientes", icon: UsersIcon },
-  { href: "/projects", label: "Proyectos", icon: FolderIcon, comingSoon: true },
+  { href: "/projects", label: "Proyectos", icon: FolderIcon },
   { href: "/tasks", label: "Tareas", icon: CheckSquareIcon, comingSoon: true },
   { href: "/calendar", label: "Calendario", icon: CalendarIcon, comingSoon: true },
   { href: "/documents", label: "Documentos", icon: DocumentIcon, comingSoon: true },

@@ -11,7 +11,7 @@ import { ClientsTable } from "../_components/clients-table";
 import { LockIcon, PlusIcon, SearchIcon, UsersIcon } from "../_components/icons";
 import { NoOrganization } from "../_components/no-organization";
 import { buttonClass, Card, EmptyState, PageHeader } from "../_components/ui";
-import { Notice } from "./_components/notice";
+import { Notice } from "../_components/notice";
 import { clientsListHref, noticeMessage } from "./form-data";
 
 export const metadata: Metadata = { title: "Clientes · SmartDesk" };

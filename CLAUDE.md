@@ -17,6 +17,9 @@ Multi-tenant SaaS for small businesses. Full-stack Next.js (App Router), Prisma 
 - App pages live in `src/app/(app)/` and get user + active organization from `getAppContext()`. The `sd_active_org` cookie is only a hint validated against memberships; never trust a client-sent organization id without `tenantAccess.authorize()`.
 - Do not pass functions (e.g. icon components) as props from Server to Client Components; let the client component import them.
 - Modules not built yet show `ComingSoon`; never fake persisted data in the UI.
+- Any id that links records across tables (e.g. a project's `clientId`) must be checked by the service against the active organization; prefer a composite FK `(x_id, organization_id)` as a database-level backstop (see `Project` → `Client`).
+- `<select>` with `defaultValue` in action forms: give it `key={value}` so it remounts with the submitted value (React applies select defaults only on mount).
+- Calendar dates (`@db.Date`) are UTC midnight: format with `formatDay` (UTC), never `formatDate`.
 - Form Server Actions: read only known fields from FormData (see `readClientForm`), treat bound ids as untrusted, take the tenant from `getAppContext()`, and map errors to friendly messages (call `unstable_rethrow` first so redirects still work). Never return raw error messages to the client.
 - Passwords: `src/server/auth/password.ts` (scrypt). Never log passwords or emails.
 - Read env through `getEnv()` (lazy), never `process.env` directly in app code.
