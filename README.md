@@ -105,10 +105,14 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 | `/clients/new` | Alta de cliente (ADMIN y EMPLOYEE) |
 | `/clients/{id}` | Ficha de un cliente, con Editar y (solo ADMIN) Eliminar |
 | `/clients/{id}/edit` | Edición de cliente (ADMIN y EMPLOYEE) |
-| `/projects`, `/tasks`, `/calendar`, `/documents`, `/settings` | Página «Próximamente» |
+| `/projects` | Listado de proyectos con búsqueda (proyecto o cliente), filtros (estado, prioridad, cliente) y paginación |
+| `/projects/new` | Alta de proyecto (ADMIN y EMPLOYEE) |
+| `/projects/{id}` | Ficha del proyecto (Resumen; Tareas, Calendario, Documentos, Equipo y Actividad «Próximamente»), con Editar y (solo ADMIN) Eliminar |
+| `/projects/{id}/edit` | Edición de proyecto (ADMIN y EMPLOYEE) |
+| `/tasks`, `/calendar`, `/documents`, `/settings` | Página «Próximamente» |
 
 - **Organización activa**: `getAppContext()` (`src/server/auth/organization-context.ts`) obtiene el usuario con Auth.js y elige una de **sus** organizaciones. La cookie `sd_active_org` solo guarda la preferencia (se cambia con el selector del sidebar cuando el usuario pertenece a varias); si apunta a una organización de la que no es miembro, se ignora. Además, cada consulta vuelve a pasar por `tenantAccessService.authorize()`.
-- Las páginas llaman a servicios (`dashboardService`, `clientService`), nunca a repositorios. Un usuario con rol `CLIENT` ve el dashboard sin datos de clientes.
+- Las páginas llaman a servicios (`dashboardService`, `clientService`, `projectService`), nunca a repositorios. Un usuario con rol `CLIENT` ve el dashboard sin datos de clientes.
 - Estados de UI: `loading.tsx` (esqueletos), `error.tsx` en `(app)` y en la raíz (por ejemplo, base de datos caída), `not-found` para clientes inexistentes o de otra organización, y estados vacíos.
 - Componentes en `src/app/(app)/_components/`; formato de fechas y textos en `src/lib/format.ts` (`es-ES`, zona `Europe/Madrid`). Los colores son tokens CSS (`globals.css`) con modo oscuro.
 
@@ -120,6 +124,16 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 - Formularios: validación en el servidor con mensajes en español, se conservan los valores tras un error, el foco va al primer campo inválido, botón desactivado mientras se guarda (sin dobles envíos). Los errores inesperados muestran un mensaje genérico y el detalle solo queda en el log del servidor.
 - Eliminar pide confirmación en un `<dialog>` (el foco empieza en «Cancelar») e indica que no se puede deshacer.
 - Tras crear, editar o eliminar se redirige con `?notice=created|updated|deleted`, que muestra un aviso de éxito y se quita de la URL. Las redirecciones del listado se construyen en el servidor a partir de búsqueda y página validadas (sin redirecciones abiertas).
+
+### Proyectos
+
+- Modelo `Project` (`prisma/schema.prisma`): pertenece a una organización, a un cliente y a su creador (`createdBy`, que se muestra como responsable). Estado (`ProjectStatus`) y prioridad (`ProjectPriority`) son enums; fechas de inicio y fin como `DATE`; presupuesto e horas como `DECIMAL`. Está preparado para colgar de él tareas, eventos, documentos, equipo y actividad en fases posteriores.
+- **Aislamiento entre organizaciones en tres capas**: el servicio comprueba con el repositorio de clientes que el `clientId` recibido pertenece a la organización activa; todas las consultas del repositorio filtran por `organizationId`; y la base de datos usa una clave foránea compuesta `(client_id, organization_id)` → `clients(id, organization_id)`, de modo que PostgreSQL rechaza un proyecto apuntando a un cliente de otra organización aunque fallara el código.
+- Un cliente con proyectos no se puede eliminar (la base de datos lo impide y la interfaz lo explica); hay que eliminar o reasignar antes sus proyectos. Borrar una organización entera sí elimina sus proyectos.
+- Permisos `project:read`, `project:write` (ADMIN, EMPLOYEE) y `project:delete` (solo ADMIN) en `src/server/auth/permissions.ts`; CLIENT no tiene acceso al CRUD.
+- Mismo patrón que Clientes: Server Actions en `src/app/(app)/projects/actions.ts`, Route Handlers en `/api/organizations/{organizationId}/projects`, servicio `projectService` y repositorio `projectRepository` (único que usa Prisma).
+- El **progreso** se muestra como 0 % porque todavía no existen tareas: no se inventa. Se calculará a partir de las tareas cuando exista ese módulo.
+- Importes y horas aceptan coma o punto decimal (máximo dos decimales, sin separador de miles).
 
 **Actividad reciente (pendiente).** No existe todavía un modelo de actividad, así que el panel solo muestra un estado vacío. Para hacerlo real falta: una tabla `ActivityEvent` (organización, autor, acción, entidad, metadatos, fecha) escrita por los servicios al crear o cambiar datos, y un método de repositorio/servicio que liste los últimos eventos de una organización.
 
@@ -134,7 +148,12 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 | POST | `/api/organizations/{organizationId}/clients` | `client:write` |
 | GET | `/api/organizations/{organizationId}/clients/{clientId}` | `client:read` |
 | PATCH | `/api/organizations/{organizationId}/clients/{clientId}` | `client:write` |
-| DELETE | `/api/organizations/{organizationId}/clients/{clientId}` | `client:delete` (solo ADMIN) |
+| DELETE | `/api/organizations/{organizationId}/clients/{clientId}` | `client:delete` (solo ADMIN); `409` si tiene proyectos |
+| GET | `/api/organizations/{organizationId}/projects?search=&status=&priority=&clientId=&page=&pageSize=` | `project:read` |
+| POST | `/api/organizations/{organizationId}/projects` | `project:write` |
+| GET | `/api/organizations/{organizationId}/projects/{projectId}` | `project:read` |
+| PATCH | `/api/organizations/{organizationId}/projects/{projectId}` | `project:write` |
+| DELETE | `/api/organizations/{organizationId}/projects/{projectId}` | `project:delete` (solo ADMIN) |
 
 Errores: `{ "error": { "code", "message", "details?" } }` con `400`, `401`, `403`, `404`, `409` o `500` (sin detalles internos).
 

@@ -1,9 +1,9 @@
 import { FormSkeleton } from "../../../_components/form-skeleton";
 
-export default function EditClientLoading() {
+export default function EditProjectLoading() {
   return (
     <div className="mx-auto max-w-3xl">
-      <FormSkeleton label="Cargando cliente…" />
+      <FormSkeleton label="Cargando proyecto…" />
     </div>
   );
 }

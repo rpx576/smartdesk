@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircleIcon, CloseIcon } from "../../_components/icons";
+import { CheckCircleIcon, CloseIcon } from "./icons";
 
 /**
  * Success banner shown after a redirect (`?notice=...`). The parameter is

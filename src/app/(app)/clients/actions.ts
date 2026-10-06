@@ -101,6 +101,14 @@ export async function deleteClient(_state: DeleteClientState, formData: FormData
     // Only ADMIN holds `client:delete`; the service rejects everyone else.
     await clientService.delete(user, organizationId, id.data);
   } catch (error) {
+    unstable_rethrow(error);
+    // The database blocks deleting a client that still has projects.
+    if (error instanceof ConflictError) {
+      return {
+        error:
+          "No se puede eliminar: este cliente tiene proyectos asociados. Elimina o reasigna antes sus proyectos.",
+      };
+    }
     const result = failure(error);
     if (error instanceof ForbiddenError) return { error: "Solo un administrador puede eliminar clientes." };
     if (error instanceof NotFoundError) return { error: result?.error };

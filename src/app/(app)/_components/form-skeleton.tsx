@@ -1,4 +1,4 @@
-import { Card, Skeleton } from "../../_components/ui";
+import { Card, Skeleton } from "./ui";
 
 export function FormSkeleton({ label }: { label: string }) {
   return (

@@ -19,6 +19,21 @@ enum ClientStatus {
   INACTIVE
 }
 
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 /// Tenant root. Every business record belongs to exactly one organization.
 model Organization {
   id        String   @id @default(uuid(7)) @db.Uuid
@@ -29,6 +44,7 @@ model Organization {
 
   memberships Membership[]
   clients     Client[]
+  projects    Project[]
 
   @@map("organizations")
 }
@@ -45,7 +61,8 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  memberships Membership[]
+  memberships     Membership[]
+  createdProjects Project[]    @relation("ProjectCreatedBy")
 
   @@map("users")
 }
@@ -80,8 +97,44 @@ model Client {
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projects     Project[]
 
   @@unique([organizationId, email])
+  /// Target of the composite foreign key from Project (same-tenant guarantee).
+  @@unique([id, organizationId])
   @@index([organizationId, name])
   @@map("clients")
+}
+
+/// A piece of work for one client. Prepared to own tasks, events, documents,
+/// team members and activity in later phases.
+model Project {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  clientId       String          @map("client_id") @db.Uuid
+  name           String
+  description    String?
+  status         ProjectStatus   @default(PLANNING)
+  priority       ProjectPriority @default(MEDIUM)
+  startDate      DateTime?       @map("start_date") @db.Date
+  dueDate        DateTime?       @map("due_date") @db.Date
+  budget         Decimal?        @db.Decimal(12, 2)
+  estimatedHours Decimal?        @map("estimated_hours") @db.Decimal(8, 2)
+  /// Null only if the creating user is deleted later.
+  createdById    String?         @map("created_by_id") @db.Uuid
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// Composite key: the database itself rejects a client from another organization.
+  /// NoAction: a client with projects cannot be deleted by accident, while
+  /// deleting a whole organization still cascades (checked at statement end).
+  client       Client       @relation(fields: [clientId, organizationId], references: [id, organizationId], onDelete: NoAction)
+  createdBy    User?        @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, status])
+  @@index([organizationId, clientId])
+  @@index([createdById])
+  @@map("projects")
 }
