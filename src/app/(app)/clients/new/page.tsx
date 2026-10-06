@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { roleHasPermission } from "@/server/auth/permissions";
+import { clientCapabilities } from "@/server/auth/permissions";
 import { getAppContext } from "@/server/auth/organization-context";
 import { ArrowLeftIcon, LockIcon } from "../../_components/icons";
 import { NoOrganization } from "../../_components/no-organization";
@@ -15,7 +15,7 @@ export default async function NewClientPage() {
   if (!organization) return <NoOrganization />;
 
   // The create action is authorized again by the service.
-  if (!roleHasPermission(organization.role, "client:write")) {
+  if (!clientCapabilities(organization.role).canWrite) {
     return (
       <Card>
         <EmptyState

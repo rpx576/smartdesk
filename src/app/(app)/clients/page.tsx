@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatNumber } from "@/lib/format";
-import { roleHasPermission } from "@/server/auth/permissions";
+import { clientCapabilities } from "@/server/auth/permissions";
 import { getAppContext } from "@/server/auth/organization-context";
 import { ForbiddenError } from "@/server/errors/app-error";
 import { clientService } from "@/server/services/client.service";
@@ -57,8 +57,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
   }
 
   // UI hints only; the service authorizes every create/edit/delete again.
-  const canWrite = roleHasPermission(organization.role, "client:write");
-  const canDelete = roleHasPermission(organization.role, "client:delete");
+  const { canWrite, canDelete } = clientCapabilities(organization.role);
   const firstItem = meta.total === 0 ? 0 : (meta.page - 1) * meta.pageSize + 1;
   const lastItem = Math.min(meta.page * meta.pageSize, meta.total);
 
