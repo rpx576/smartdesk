@@ -65,6 +65,16 @@ const service = createDashboardService({
       calls.push(`tasks:${organizationId}:${today.toISOString().slice(0, 10)}`);
       return { open: 5, overdue: 2, completed: 4 };
     },
+    async listUpcomingDue(organizationId, { from, to, assigneeId }) {
+      calls.push(`due:${organizationId}:${from.toISOString().slice(0, 10)}:${to.toISOString().slice(0, 10)}:${assigneeId}`);
+      return [];
+    },
+  },
+  calendarEventRepository: {
+    async listUpcoming(organizationId, { userId, limit }) {
+      calls.push(`events:${organizationId}:${userId}:${limit}`);
+      return [];
+    },
   },
   tenantAccess: createTenantAccessService({
     membershipRepository: {
@@ -97,7 +107,7 @@ describe("dashboardService.getOverview", () => {
   it("gives the CLIENT role the page but no clients, projects or tasks", async () => {
     calls.length = 0;
     const overview = await service.getOverview(user("client-a"), "org-a");
-    assert.deepEqual(overview, { role: "CLIENT", clients: null, projects: null, tasks: null });
+    assert.deepEqual(overview, { role: "CLIENT", clients: null, projects: null, tasks: null, agenda: null });
     assert.deepEqual(calls, []);
   });
 
@@ -108,5 +118,13 @@ describe("dashboardService.getOverview", () => {
     assert.deepEqual(overview.tasks, { open: 5, overdue: 2, completed: 4 });
     assert.ok(calls.includes("projects:org-a"));
     assert.ok(calls.includes("tasks:org-a:2026-10-07"));
+  });
+
+  it("fills the caller's own agenda: upcoming events and deadlines of the next 7 days", async () => {
+    calls.length = 0;
+    const overview = await service.getOverview(user("employee-a"), "org-a");
+    assert.deepEqual(overview.agenda, { events: [], deadlines: [] });
+    assert.ok(calls.includes("events:org-a:employee-a:5"));
+    assert.ok(calls.includes("due:org-a:2026-10-07:2026-10-14:employee-a"));
   });
 });

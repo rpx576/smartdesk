@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { addDays, startOfZonedDay, zonedDateTime } from "../src/lib/dates";
 import { hashPassword } from "../src/server/auth/password";
 
 /**
@@ -143,6 +144,36 @@ async function main() {
   for (const data of tasks) {
     // Seeded tasks are created by their assignee.
     await prisma.task.upsert({ where: { id: data.id }, update: {}, create: { ...data, createdById: data.assigneeId } });
+  }
+
+  // Calendar events: times are wall-clock times in Madrid. Two Acme events
+  // overlap on purpose (same assignee) to show the conflict warning.
+  const event = (n: number) => `018f0000-0000-7000-8000-${String(400 + n).padStart(12, "0")}`;
+  const timed = (date: string, start: string, end: string) => ({
+    startDateTime: zonedDateTime(date, start),
+    endDateTime: zonedDateTime(date, end),
+    allDay: false,
+  });
+  const allDay = (date: string) => ({
+    startDateTime: startOfZonedDay(date),
+    endDateTime: startOfZonedDay(addDays(date, 1)),
+    allDay: true,
+  });
+  const bodegas = clientIds["contacto@bodegasrioja.test"];
+  const talleres = clientIds["info@talleresmartin.test"];
+  const initech = clientIds["hello@initech.test"];
+  const events = [
+    { id: event(1), organizationId: ids.acme, createdById: ids.acmeAdmin, assignedToId: ids.acmeEmployee, type: "MEETING", title: "Seguimiento semanal con Bodegas Rioja", location: "Oficina del cliente, Logroño", clientId: bodegas, projectId: ids.acmeWebsite, ...timed("2026-10-07", "10:00", "11:00") },
+    { id: event(2), organizationId: ids.acme, createdById: ids.acmeAdmin, assignedToId: ids.acmeEmployee, type: "INTERNAL", title: "Planificación del sprint", location: "Sala 1", ...timed("2026-10-07", "10:30", "11:30") },
+    { id: event(3), organizationId: ids.acme, createdById: ids.acmeEmployee, assignedToId: ids.acmeEmployee, type: "MEETING", title: "Demo de la pasarela de pago", description: "Probar el flujo completo de compra con tarjetas de test.", clientId: bodegas, projectId: ids.acmeWebsite, taskId: task(3), ...timed("2026-10-08", "12:00", "13:00") },
+    { id: event(4), organizationId: ids.acme, createdById: ids.acmeAdmin, assignedToId: ids.acmeAdmin, type: "DELIVERY", title: "Entrega del diseño final", clientId: bodegas, projectId: ids.acmeWebsite, ...allDay("2026-10-09") },
+    { id: event(5), organizationId: ids.acme, createdById: ids.acmeAdmin, assignedToId: ids.acmeAdmin, type: "REMINDER", title: "Revisar textos legales antes del viernes", clientId: bodegas, projectId: ids.acmeWebsite, taskId: task(4), ...timed("2026-10-10", "09:00", "09:30") },
+    { id: event(6), organizationId: ids.acme, createdById: ids.acmeEmployee, assignedToId: ids.acmeEmployee, type: "MEETING", title: "Visita a Talleres Martín", location: "Polígono Industrial Norte, nave 4", clientId: talleres, projectId: ids.acmeMaintenance, ...timed("2026-10-14", "16:00", "17:30") },
+    { id: event(7), organizationId: ids.globex, createdById: ids.globexAdmin, assignedToId: ids.globexAdmin, type: "MEETING", title: "Kick-off de la migración con Initech", clientId: initech, projectId: ids.globexMigration, taskId: task(9), ...timed("2026-10-08", "10:00", "11:00") },
+    { id: event(8), organizationId: ids.globex, createdById: ids.globexAdmin, assignedToId: ids.globexAdmin, type: "OTHER", title: "Ventana de mantenimiento", ...allDay("2026-10-17") },
+  ] as const;
+  for (const data of events) {
+    await prisma.calendarEvent.upsert({ where: { id: data.id }, update: {}, create: data });
   }
 
   console.log("Seed completed", ids);

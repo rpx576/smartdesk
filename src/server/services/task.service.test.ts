@@ -96,6 +96,13 @@ function createFakeTaskRepository(store: Task[]): TaskRepository {
     async summary() {
       return { open: 0, overdue: 0, completed: 0 };
     },
+    // Calendar queries: not used by the task service.
+    async listInRange() {
+      return { items: [], truncated: false };
+    },
+    async listUpcomingDue() {
+      return [];
+    },
     async create(organizationId, createdById, data: TaskCreateData & { completedAt: Date | null }) {
       const task = makeTask(organizationId, data.projectId, data.assigneeId, { ...(data as Partial<Task>), createdById });
       store.push(task);

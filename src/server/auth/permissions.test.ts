@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { clientCapabilities, projectCapabilities, roleHasPermission, taskCapabilities } from "./permissions";
+import {
+  calendarCapabilities,
+  canModifyEvent,
+  clientCapabilities,
+  projectCapabilities,
+  roleHasPermission,
+  taskCapabilities,
+} from "./permissions";
 
 describe("clientCapabilities (what the clients UI offers)", () => {
   it("lets ADMIN see create, edit and delete actions", () => {
@@ -74,5 +81,39 @@ describe("project permissions", () => {
       assert.equal(caps.canWrite, roleHasPermission(role, "project:write"));
       assert.equal(caps.canDelete, roleHasPermission(role, "project:delete"));
     }
+  });
+});
+
+describe("calendar permissions", () => {
+  const ME = "user-me";
+  const OTHER = "user-other";
+  const event = (createdById: string | null, assignedToId: string | null) => ({ createdById, assignedToId });
+
+  it("lets ADMIN and EMPLOYEE read and create events; only ADMIN manages every event", () => {
+    assert.deepEqual(calendarCapabilities("ADMIN"), { canRead: true, canCreate: true, canManageAll: true });
+    assert.deepEqual(calendarCapabilities("EMPLOYEE"), { canRead: true, canCreate: true, canManageAll: false });
+  });
+
+  it("gives CLIENT no access to the calendar in V1", () => {
+    assert.deepEqual(calendarCapabilities("CLIENT"), { canRead: false, canCreate: false, canManageAll: false });
+    assert.equal(canModifyEvent("CLIENT", ME, event(ME, ME)), false);
+  });
+
+  it("ADMIN can modify any event of the organization", () => {
+    assert.equal(canModifyEvent("ADMIN", ME, event(OTHER, OTHER)), true);
+    assert.equal(canModifyEvent("ADMIN", ME, event(null, null)), true);
+  });
+
+  it("EMPLOYEE can modify only events they created or are assigned to", () => {
+    assert.equal(canModifyEvent("EMPLOYEE", ME, event(ME, OTHER)), true);
+    assert.equal(canModifyEvent("EMPLOYEE", ME, event(OTHER, ME)), true);
+    assert.equal(canModifyEvent("EMPLOYEE", ME, event(OTHER, OTHER)), false);
+    assert.equal(canModifyEvent("EMPLOYEE", ME, event(null, null)), false);
+  });
+
+  it("only internal staff can be in charge of an event", () => {
+    assert.equal(roleHasPermission("ADMIN", "calendar:assignable"), true);
+    assert.equal(roleHasPermission("EMPLOYEE", "calendar:assignable"), true);
+    assert.equal(roleHasPermission("CLIENT", "calendar:assignable"), false);
   });
 });

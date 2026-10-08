@@ -1,5 +1,6 @@
 import { Prisma } from "@/generated/prisma/client";
 import { getPrisma } from "@/server/db/prisma";
+import type { CalendarFilter, CalendarTask } from "@/server/domain/calendar-event";
 import {
   OPEN_TASK_STATUSES,
   type Task,
@@ -73,6 +74,56 @@ export function taskOrderBy(sort: TaskSort = "recent"): Prisma.TaskOrderByWithRe
     default:
       return [{ createdAt: "desc" }, { id: "desc" }];
   }
+}
+
+/** Calendar days `[firstDay, lastDay]` as stored calendar dates (UTC midnight). */
+export type CalendarDayRange = { firstDay: Date; lastDay: Date };
+
+const calendarTaskSelect = {
+  id: true,
+  title: true,
+  status: true,
+  priority: true,
+  startDate: true,
+  dueDate: true,
+  project: { select: { id: true, name: true, client: { select: { id: true, name: true } } } },
+  assignee: person,
+} satisfies Prisma.TaskSelect;
+
+/**
+ * Tasks visible in a period: they need a due date, and their span (start date,
+ * or the due date alone, up to the due date) must touch `[firstDay, lastDay]`.
+ * CANCELLED tasks are hidden unless that status is asked for explicitly.
+ * Always scoped to the organization first; filters only narrow.
+ */
+export function buildTaskRangeWhere(
+  organizationId: string,
+  { firstDay, lastDay }: CalendarDayRange,
+  { mine, projectId, userId, taskStatus, search }: Omit<CalendarFilter, "show" | "eventType">,
+  viewerId: string,
+): Prisma.TaskWhereInput {
+  const and: Prisma.TaskWhereInput[] = [
+    { OR: [{ startDate: null, dueDate: { lte: lastDay } }, { startDate: { lte: lastDay } }] },
+  ];
+  if (mine) and.push({ assigneeId: viewerId });
+  if (search) {
+    and.push({
+      OR: [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { project: { name: { contains: search, mode: "insensitive" } } },
+        { project: { client: { name: { contains: search, mode: "insensitive" } } } },
+      ],
+    });
+  }
+  return {
+    organizationId,
+    dueDate: { gte: firstDay },
+    status: taskStatus ?? { not: "CANCELLED" },
+    ...(projectId ? { projectId } : {}),
+    ...(userId ? { assigneeId: userId } : {}),
+    AND: and,
+  };
 }
 
 const PROJECT_OR_ASSIGNEE_MISMATCH = "Project or assignee does not belong to the organization";
@@ -161,9 +212,50 @@ export const taskRepository = {
     }
   },
 
-  /** Returns false when the task does not exist in this organization. */
+  /**
+   * Tasks to show on the calendar for the calendar days `[firstDay, lastDay]`
+   * (UTC-midnight dates), with only the fields the calendar needs.
+   */
+  async listInRange(
+    organizationId: string,
+    range: CalendarDayRange,
+    filter: CalendarFilter,
+    viewerId: string,
+    limit: number,
+  ): Promise<{ items: CalendarTask[]; truncated: boolean }> {
+    const rows = await getPrisma().task.findMany({
+      where: buildTaskRangeWhere(organizationId, range, filter, viewerId),
+      select: calendarTaskSelect,
+      orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+      take: limit + 1,
+    });
+    return { items: rows.slice(0, limit), truncated: rows.length > limit };
+  },
+
+  /** Open tasks due in `[from, to]` (calendar dates), soonest first; optionally only one member's. */
+  async listUpcomingDue(
+    organizationId: string,
+    { from, to, assigneeId, limit }: { from: Date; to: Date; assigneeId?: string; limit: number },
+  ): Promise<CalendarTask[]> {
+    return getPrisma().task.findMany({
+      where: {
+        organizationId,
+        status: { in: [...OPEN_TASK_STATUSES] },
+        dueDate: { gte: from, lte: to },
+        ...(assigneeId ? { assigneeId } : {}),
+      },
+      select: calendarTaskSelect,
+      orderBy: [{ dueDate: "asc" }, { priority: "desc" }, { id: "asc" }],
+      take: limit,
+    });
+  },
+
+  /** Returns false when the task does not exist in this organization. Its calendar events are unlinked, not deleted. */
   async delete(organizationId: string, id: string): Promise<boolean> {
-    const { count } = await getPrisma().task.deleteMany({ where: { id, organizationId } });
+    const { count } = await getPrisma().$transaction(async (tx) => {
+      await tx.calendarEvent.updateMany({ where: { organizationId, taskId: id }, data: { taskId: null } });
+      return tx.task.deleteMany({ where: { id, organizationId } });
+    });
     return count > 0;
   },
 };

@@ -22,7 +22,7 @@ export const mainNavigation: NavItem[] = [
   { href: "/clients", label: "Clientes", icon: UsersIcon },
   { href: "/projects", label: "Proyectos", icon: FolderIcon },
   { href: "/tasks", label: "Tareas", icon: CheckSquareIcon },
-  { href: "/calendar", label: "Calendario", icon: CalendarIcon, comingSoon: true },
+  { href: "/calendar", label: "Calendario", icon: CalendarIcon },
   { href: "/documents", label: "Documentos", icon: DocumentIcon, comingSoon: true },
 ];
 

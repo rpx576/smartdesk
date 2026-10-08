@@ -6,15 +6,18 @@ import { z } from "zod";
 import { todayCalendarDate } from "@/lib/dates";
 import { formatCurrency, formatDate, formatDay, formatHours } from "@/lib/format";
 import { getAppContext } from "@/server/auth/organization-context";
-import { projectCapabilities, taskCapabilities } from "@/server/auth/permissions";
+import { calendarCapabilities, projectCapabilities, taskCapabilities } from "@/server/auth/permissions";
 import { ForbiddenError, NotFoundError } from "@/server/errors/app-error";
+import { calendarEventService } from "@/server/services/calendar-event.service";
 import { projectService } from "@/server/services/project.service";
 import { taskService } from "@/server/services/task.service";
 import { ConfirmDeleteButton } from "../../_components/confirm-delete-button";
-import { ArrowLeftIcon, CheckSquareIcon, LockIcon, PencilIcon, PlusIcon } from "../../_components/icons";
+import { ArrowLeftIcon, CalendarIcon, CheckSquareIcon, LockIcon, PencilIcon, PlusIcon } from "../../_components/icons";
 import { NoOrganization } from "../../_components/no-organization";
 import { Notice } from "../../_components/notice";
 import { buttonClass, Card, CardHeader, EmptyState } from "../../_components/ui";
+import { UpcomingEventsList } from "../../calendar/_components/upcoming-events";
+import { calendarHref } from "../../calendar/view-model";
 import { TasksTable } from "../../tasks/_components/tasks-table";
 import { deleteProject } from "../actions";
 import {
@@ -27,17 +30,18 @@ import { noticeMessage } from "../form-data";
 
 export const metadata: Metadata = { title: "Proyecto · SmartDesk" };
 
-/** Project sections: summary and tasks exist; the rest are planned for later phases. */
+/** Project sections: summary, tasks and calendar exist; the rest are planned for later phases. */
 const SECTIONS = [
   { label: "Resumen", href: "#resumen" },
   { label: "Tareas", href: "#tareas" },
-  { label: "Calendario" },
+  { label: "Calendario", href: "#calendario" },
   { label: "Documentos" },
   { label: "Equipo" },
   { label: "Actividad" },
 ] as const;
 
 const PROJECT_TASKS_LIMIT = 100;
+const PROJECT_EVENTS_LIMIT = 5;
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -83,10 +87,14 @@ export default async function ProjectDetailPage({
   const taskCaps = taskCapabilities(organization.role);
   const notice = noticeMessage((await searchParams).notice);
   const owner = project.createdBy ? (project.createdBy.name ?? project.createdBy.email) : null;
-  // Same tenant and permission checks as the task list (one query for the whole section).
-  const tasks = taskCaps.canRead
-    ? await taskService.listForProject(user, organization.id, project.id, PROJECT_TASKS_LIMIT)
-    : null;
+  const calendarCaps = calendarCapabilities(organization.role);
+  // Same tenant and permission checks as the task list and the calendar (one query per section).
+  const [tasks, events] = await Promise.all([
+    taskCaps.canRead ? taskService.listForProject(user, organization.id, project.id, PROJECT_TASKS_LIMIT) : null,
+    calendarCaps.canRead
+      ? calendarEventService.listUpcoming(user, organization.id, { projectId: project.id, limit: PROJECT_EVENTS_LIMIT })
+      : null,
+  ]);
 
   return (
     <>
@@ -134,7 +142,7 @@ export default async function ProjectDetailPage({
         )}
       </div>
 
-      {/* Section navigation: summary and tasks are on this page; the rest come in later phases. */}
+      {/* Section navigation: summary, tasks and calendar are on this page; the rest come in later phases. */}
       <nav aria-label="Secciones del proyecto" className="mb-6 overflow-x-auto border-b border-line">
         <ul className="flex min-w-max gap-1">
           {SECTIONS.map((section) =>
@@ -251,6 +259,40 @@ export default async function ProjectDetailPage({
                 </div>
               </>
             )}
+          </Card>
+        </section>
+      )}
+
+      {events && (
+        <section id="calendario" aria-labelledby="project-calendar" className="mt-6 scroll-mt-20">
+          <Card className="min-w-0">
+            <CardHeader
+              id="project-calendar"
+              title="Calendario"
+              description="Próximos eventos de este proyecto"
+              action={
+                calendarCaps.canCreate ? (
+                  <Link href={`/calendar/new?projectId=${project.id}`} className={buttonClass.primary}>
+                    <PlusIcon className="size-4" />
+                    Nuevo evento
+                  </Link>
+                ) : undefined
+              }
+            />
+            {events.length === 0 ? (
+              <EmptyState
+                icon={CalendarIcon}
+                title="No hay eventos próximos"
+                description="Programa reuniones, entregas o recordatorios de este proyecto."
+              />
+            ) : (
+              <UpcomingEventsList events={events} showProject={false} />
+            )}
+            <div className="border-t border-line px-5 py-3 text-sm">
+              <Link href={calendarHref({ view: "agenda", projectId: project.id })} className={buttonClass.ghost}>
+                Ver en el calendario
+              </Link>
+            </div>
           </Card>
         </section>
       )}

@@ -169,3 +169,35 @@ export const SparkIcon = (p: IconProps) => (
     <path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />
   </Icon>
 );
+
+export const ChevronLeftIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m14.5 6-6 6 6 6" />
+  </Icon>
+);
+
+export const ChevronRightIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m9.5 6 6 6-6 6" />
+  </Icon>
+);
+
+export const ClockIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="8.25" />
+    <path d="M12 7.5V12l3 2" />
+  </Icon>
+);
+
+export const MapPinIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 20.5s6.5-5.6 6.5-10.5a6.5 6.5 0 0 0-13 0c0 4.9 6.5 10.5 6.5 10.5Z" />
+    <circle cx="12" cy="10" r="2.25" />
+  </Icon>
+);
+
+export const FilterIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 6h16M7 12h10M10 18h4" />
+  </Icon>
+);

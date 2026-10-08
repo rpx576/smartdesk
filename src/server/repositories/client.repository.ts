@@ -109,10 +109,15 @@ export const clientRepository = {
   /**
    * Returns false when the client does not exist in this organization. Throws
    * ConflictError while the client still has projects (the database blocks it).
+   * Calendar events linked to the client are kept, only unlinked (rolled back
+   * if the delete is blocked).
    */
   async delete(organizationId: string, id: string): Promise<boolean> {
     try {
-      const { count } = await getPrisma().client.deleteMany({ where: { id, organizationId } });
+      const { count } = await getPrisma().$transaction(async (tx) => {
+        await tx.calendarEvent.updateMany({ where: { organizationId, clientId: id }, data: { clientId: null } });
+        return tx.client.deleteMany({ where: { id, organizationId } });
+      });
       return count > 0;
     } catch (error) {
       if (isPrismaError(error, "P2003")) throw new ConflictError(CLIENT_HAS_PROJECTS);

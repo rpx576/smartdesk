@@ -15,6 +15,7 @@ import {
 import { NoOrganization } from "../_components/no-organization";
 import { buttonClass, Card, CardHeader, EmptyState, PageHeader, TextLink } from "../_components/ui";
 import { ActivityPanel } from "./_components/activity-panel";
+import { AgendaPanel } from "./_components/agenda-panel";
 import { ClientPortfolio } from "./_components/client-portfolio";
 import { StatCard } from "./_components/stat-card";
 
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
   if (!organization) return <NoOrganization />;
 
   // Tenant and role checks happen inside the service, against the database.
-  const { clients, projects, tasks } = await dashboardService.getOverview(user, organization.id);
+  const { clients, projects, tasks, agenda } = await dashboardService.getOverview(user, organization.id);
   const now = new Date();
   const firstName = user.name?.split(" ")[0] ?? user.email;
 
@@ -119,7 +120,8 @@ export default async function DashboardPage() {
           </Card>
         </section>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
+          {agenda && <AgendaPanel events={agenda.events} deadlines={agenda.deadlines} />}
           {clients && <ClientPortfolio summary={clients} />}
           <ActivityPanel />
         </div>

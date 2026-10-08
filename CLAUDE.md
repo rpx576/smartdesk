@@ -17,12 +17,16 @@ Multi-tenant SaaS for small businesses. Full-stack Next.js (App Router), Prisma 
 - App pages live in `src/app/(app)/` and get user + active organization from `getAppContext()`. The `sd_active_org` cookie is only a hint validated against memberships; never trust a client-sent organization id without `tenantAccess.authorize()`.
 - Do not pass functions (e.g. icon components) as props from Server to Client Components; let the client component import them.
 - Modules not built yet show `ComingSoon`; never fake persisted data in the UI.
-- Any id that links records across tables (e.g. a project's `clientId`, a task's `projectId`/`assigneeId`) must be checked by the service against the active organization; add a composite FK `(x_id, organization_id)` as a database-level backstop (see `Project` → `Client`, `Task` → `Project`, `Task` → `Membership`).
+- Any id that links records across tables (e.g. a project's `clientId`, a task's `projectId`/`assigneeId`) must be checked by the service against the active organization; add a composite FK `(x_id, organization_id)` as a database-level backstop (see `Project` → `Client`, `Task` → `Project`, `Task` → `Membership`, `CalendarEvent` → `Membership`/`Client`/`Project`/`Task`).
 - Shared Zod building blocks (dates, amounts, filters, date order) live in `src/server/validation/common.ts`; shared form controls in `src/app/(app)/_components/form-controls.tsx`. Reuse them instead of copying.
 - Derived fields are computed in services, never accepted from the request (e.g. `Task.completedAt`, `createdById`, project `progress`).
 - Aggregates for lists must not be N+1: one grouped query per page (see `countsByProject` in the project repository).
 - `<select>` with `defaultValue` in action forms: give it `key={value}` so it remounts with the submitted value (React applies select defaults only on mount).
 - Calendar dates (`@db.Date`) are UTC midnight: format with `formatDay` (UTC), never `formatDate`.
+- Calendar events are instants entered as Madrid wall-clock day + time. Convert only with the helpers in `src/lib/dates.ts` (`zonedDateTime`, `zonedDay`, `zonedTime`, `startOfZonedDay`, `addDays`); never build dates with the host's time zone. All-day = local midnight to next local midnight.
+- The calendar never copies tasks: `calendarEventService.getCalendar` reads events and tasks of the visible range (one query each) and combines them in memory into `CalendarItem` (view model only).
+- Event edit/delete rights are per record: `canModifyEvent(role, userId, event)` (`calendar:manage`, or creator/assignee with `calendar:write`). Check it in the service, not just the UI.
+- Deleting a client, project or task unlinks its calendar events in the same transaction (see the repositories' `delete`); keep that when adding new links to events.
 - Form Server Actions: read only known fields from FormData (see `readClientForm`), treat bound ids as untrusted, take the tenant from `getAppContext()`, and map errors to friendly messages (call `unstable_rethrow` first so redirects still work). Never return raw error messages to the client.
 - Passwords: `src/server/auth/password.ts` (scrypt). Never log passwords or emails.
 - Read env through `getEnv()` (lazy), never `process.env` directly in app code.

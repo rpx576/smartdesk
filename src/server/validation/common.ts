@@ -23,11 +23,11 @@ function isCalendarDate(value: string): boolean {
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 }
 
+/** Required `YYYY-MM-DD` calendar day, kept as a string (e.g. to combine it with a time). */
+export const isoDay = z.string({ error: INVALID_DATE }).refine(isCalendarDate, INVALID_DATE);
+
 /** Required `YYYY-MM-DD` calendar date → Date at UTC midnight (no time-zone shifts). */
-export const calendarDate = z
-  .string({ error: INVALID_DATE })
-  .refine(isCalendarDate, INVALID_DATE)
-  .transform((value) => new Date(`${value}T00:00:00.000Z`));
+export const calendarDate = isoDay.transform((value) => new Date(`${value}T00:00:00.000Z`));
 
 /** Optional calendar date: "" / null → null. */
 export const optionalDate = z

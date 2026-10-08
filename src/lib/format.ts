@@ -1,3 +1,4 @@
+import type { CalendarEventType } from "@/server/domain/calendar-event";
 import type { ClientStatus } from "@/server/domain/client";
 import type { ProjectPriority, ProjectStatus } from "@/server/domain/project";
 import type { TaskPriority, TaskSort, TaskStatus } from "@/server/domain/task";
@@ -155,3 +156,65 @@ export const clientStatusLabels: Record<ClientStatus, string> = {
   LEAD: "Potencial",
   INACTIVE: "Inactivo",
 };
+
+export const calendarEventTypeLabels: Record<CalendarEventType, string> = {
+  MEETING: "Reunión",
+  REMINDER: "Recordatorio",
+  DELIVERY: "Entrega",
+  INTERNAL: "Interno",
+  OTHER: "Otro",
+};
+
+const timeFormatter = new Intl.DateTimeFormat(LOCALE, {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: TIME_ZONE,
+});
+
+/** "09:30": wall-clock time of an instant in the business time zone. */
+export function formatTime(date: Date): string {
+  return timeFormatter.format(date);
+}
+
+// Calendar days (`YYYY-MM-DD`) are formatted at UTC midnight in UTC, so they never shift.
+const dayPartsFormatters = {
+  monthName: new Intl.DateTimeFormat(LOCALE, { month: "long", timeZone: "UTC" }),
+  weekdayShort: new Intl.DateTimeFormat(LOCALE, { weekday: "short", timeZone: "UTC" }),
+  dayHeading: new Intl.DateTimeFormat(LOCALE, { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }),
+  dayShort: new Intl.DateTimeFormat(LOCALE, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }),
+  dayMonth: new Intl.DateTimeFormat(LOCALE, { day: "numeric", month: "short", timeZone: "UTC" }),
+};
+
+const atUtcMidnight = (day: string) => new Date(`${day}T00:00:00.000Z`);
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/** "octubre" for a `YYYY-MM-DD` day. */
+export function monthName(day: string): string {
+  return dayPartsFormatters.monthName.format(atUtcMidnight(day));
+}
+
+/** "lun" for a `YYYY-MM-DD` day (no trailing dot). */
+export function weekdayShort(day: string): string {
+  return dayPartsFormatters.weekdayShort.format(atUtcMidnight(day)).replace(".", "");
+}
+
+/** "Martes, 6 de octubre de 2026" for a `YYYY-MM-DD` day. */
+export function formatDayHeading(day: string): string {
+  return capitalize(dayPartsFormatters.dayHeading.format(atUtcMidnight(day)));
+}
+
+/** "mar, 6 oct" for a `YYYY-MM-DD` day. */
+export function formatDayShort(day: string): string {
+  return dayPartsFormatters.dayShort.format(atUtcMidnight(day)).replace(/\./g, "");
+}
+
+/** "10:00 – 11:30", or "Todo el día". */
+export function formatTimeRange(start: Date, end: Date, allDay: boolean): string {
+  return allDay ? "Todo el día" : `${formatTime(start)} – ${formatTime(end)}`;
+}
+
+/** "6 oct" for a `YYYY-MM-DD` day. */
+export function formatDayMonth(day: string): string {
+  return dayPartsFormatters.dayMonth.format(atUtcMidnight(day)).replace(/\./g, "");
+}

@@ -18,6 +18,14 @@ const PERMISSIONS = {
   "task:delete": ["ADMIN"],
   /** Roles that can be the person in charge of a task (internal staff, not CLIENT). */
   "task:assignable": ["ADMIN", "EMPLOYEE"],
+  /** See every event of the organization (tasks still need `task:read`). */
+  "calendar:read": ["ADMIN", "EMPLOYEE"],
+  /** Create events, and edit/delete the ones the member created or is assigned to. */
+  "calendar:write": ["ADMIN", "EMPLOYEE"],
+  /** Edit and delete any event of the organization. */
+  "calendar:manage": ["ADMIN"],
+  /** Roles that can be the person in charge of an event. */
+  "calendar:assignable": ["ADMIN", "EMPLOYEE"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -64,4 +72,30 @@ export function taskCapabilities(role: Role): TaskCapabilities {
     canWrite: roleHasPermission(role, "task:write"),
     canDelete: roleHasPermission(role, "task:delete"),
   };
+}
+
+export type CalendarCapabilities = { canRead: boolean; canCreate: boolean; canManageAll: boolean };
+
+/** Same idea, for the calendar UI. Per-event rights come from `canModifyEvent`. */
+export function calendarCapabilities(role: Role): CalendarCapabilities {
+  return {
+    canRead: roleHasPermission(role, "calendar:read"),
+    canCreate: roleHasPermission(role, "calendar:write"),
+    canManageAll: roleHasPermission(role, "calendar:manage"),
+  };
+}
+
+/**
+ * Whether a member may edit or delete one event: `calendar:manage` covers any
+ * event; `calendar:write` only the events the member created or is assigned to.
+ */
+export function canModifyEvent(
+  role: Role,
+  userId: string,
+  event: { createdById: string | null; assignedToId: string | null },
+): boolean {
+  if (roleHasPermission(role, "calendar:manage")) return true;
+  return (
+    roleHasPermission(role, "calendar:write") && (event.createdById === userId || event.assignedToId === userId)
+  );
 }

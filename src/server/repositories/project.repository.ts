@@ -201,9 +201,17 @@ export const projectRepository = {
     }
   },
 
-  /** Returns false when the project does not exist in this organization. Its tasks are deleted too. */
+  /**
+   * Returns false when the project does not exist in this organization. Its
+   * tasks are deleted too; calendar events linked to the project or to those
+   * tasks are kept, only unlinked.
+   */
   async delete(organizationId: string, id: string): Promise<boolean> {
-    const { count } = await getPrisma().project.deleteMany({ where: { id, organizationId } });
+    const { count } = await getPrisma().$transaction(async (tx) => {
+      await tx.calendarEvent.updateMany({ where: { organizationId, task: { projectId: id } }, data: { taskId: null } });
+      await tx.calendarEvent.updateMany({ where: { organizationId, projectId: id }, data: { projectId: null, taskId: null } });
+      return tx.project.deleteMany({ where: { id, organizationId } });
+    });
     return count > 0;
   },
 };

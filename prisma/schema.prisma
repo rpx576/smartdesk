@@ -50,6 +50,14 @@ enum TaskPriority {
   CRITICAL
 }
 
+enum CalendarEventType {
+  MEETING
+  REMINDER
+  DELIVERY
+  INTERNAL
+  OTHER
+}
+
 /// Tenant root. Every business record belongs to exactly one organization.
 model Organization {
   id        String   @id @default(uuid(7)) @db.Uuid
@@ -58,10 +66,11 @@ model Organization {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships Membership[]
-  clients     Client[]
-  projects    Project[]
-  tasks       Task[]
+  memberships    Membership[]
+  clients        Client[]
+  projects       Project[]
+  tasks          Task[]
+  calendarEvents CalendarEvent[]
 
   @@map("organizations")
 }
@@ -79,9 +88,10 @@ model User {
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   memberships     Membership[]
-  createdProjects Project[]    @relation("ProjectCreatedBy")
-  assignedTasks   Task[]       @relation("TaskAssignee")
-  createdTasks    Task[]       @relation("TaskCreatedBy")
+  createdProjects Project[]       @relation("ProjectCreatedBy")
+  assignedTasks   Task[]          @relation("TaskAssignee")
+  createdTasks    Task[]          @relation("TaskCreatedBy")
+  createdEvents   CalendarEvent[] @relation("CalendarEventCreatedBy")
 
   @@map("users")
 }
@@ -95,10 +105,12 @@ model Membership {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   /// Tasks assigned to this member (same-tenant guarantee for Task.assignee).
-  assignedTasks Task[]
+  assignedTasks  Task[]
+  /// Events assigned to this member (same-tenant guarantee for CalendarEvent.assignedTo).
+  assignedEvents CalendarEvent[]
 
   @@unique([userId, organizationId])
   @@index([organizationId])
@@ -117,8 +129,9 @@ model Client {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  projects     Project[]
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projects       Project[]
+  calendarEvents CalendarEvent[]
 
   @@unique([organizationId, email])
   /// Target of the composite foreign key from Project (same-tenant guarantee).
@@ -146,15 +159,16 @@ model Project {
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   /// Composite key: the database itself rejects a client from another organization.
   /// NoAction: a client with projects cannot be deleted by accident, while
   /// deleting a whole organization still cascades (checked at statement end).
-  client       Client       @relation(fields: [clientId, organizationId], references: [id, organizationId], onDelete: NoAction)
-  createdBy    User?        @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  tasks        Task[]
+  client         Client          @relation(fields: [clientId, organizationId], references: [id, organizationId], onDelete: NoAction)
+  createdBy      User?           @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  tasks          Task[]
+  calendarEvents CalendarEvent[]
 
-  /// Target of the composite foreign key from Task (same-tenant guarantee).
+  /// Target of the composite foreign keys from Task and CalendarEvent (same-tenant guarantee).
   @@unique([id, organizationId])
   @@index([organizationId, createdAt])
   @@index([organizationId, status])
@@ -186,21 +200,69 @@ model Task {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization       Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   /// Composite key: the database rejects a project from another organization.
   /// Deleting a project deletes its tasks.
-  project            Project      @relation(fields: [projectId, organizationId], references: [id, organizationId], onDelete: Cascade)
-  assignee           User         @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: NoAction)
+  project            Project         @relation(fields: [projectId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  assignee           User            @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: NoAction)
   /// Composite key to the membership: the assignee must be a member of the task's
   /// organization. NoAction: a member with tasks cannot be removed until the tasks
   /// are reassigned (deleting the whole organization still cascades).
-  assigneeMembership Membership   @relation(fields: [assigneeId, organizationId], references: [userId, organizationId], onDelete: NoAction)
-  createdBy          User?        @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  assigneeMembership Membership      @relation(fields: [assigneeId, organizationId], references: [userId, organizationId], onDelete: NoAction)
+  createdBy          User?           @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  calendarEvents     CalendarEvent[]
 
+  /// Target of the composite foreign key from CalendarEvent (same-tenant guarantee).
+  @@unique([id, organizationId])
   @@index([organizationId, createdAt])
   @@index([organizationId, projectId, status])
   @@index([organizationId, assigneeId])
   @@index([organizationId, status, dueDate])
   @@index([createdById])
   @@map("tasks")
+}
+
+/// Something scheduled at a date and time (meeting, reminder, delivery...).
+/// Tasks are NOT copied here: the calendar reads them from Task and combines
+/// both in memory. Prepared for recurrence, attendees and sync in later phases.
+model CalendarEvent {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  organizationId String            @map("organization_id") @db.Uuid
+  title          String
+  description    String?
+  type           CalendarEventType @default(MEETING)
+  /// Instants (UTC). An all-day event goes from local midnight (Europe/Madrid)
+  /// of its first day to local midnight of the day after its last day.
+  startDateTime  DateTime          @map("start_date_time")
+  endDateTime    DateTime          @map("end_date_time")
+  allDay         Boolean           @default(false) @map("all_day")
+  location       String?
+  /// Null only if the creating user is deleted later.
+  createdById    String?           @map("created_by_id") @db.Uuid
+  assignedToId   String?           @map("assigned_to_id") @db.Uuid
+  clientId       String?           @map("client_id") @db.Uuid
+  projectId      String?           @map("project_id") @db.Uuid
+  taskId         String?           @map("task_id") @db.Uuid
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?        @relation("CalendarEventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Composite keys: the database rejects an assignee, client, project or task
+  /// from another organization (a null id skips the check). NoAction: the
+  /// repositories unlink events before deleting a client, project or task, and
+  /// deleting a whole organization still cascades (checked at statement end).
+  assignedTo   Membership?  @relation(fields: [assignedToId, organizationId], references: [userId, organizationId], onDelete: NoAction)
+  client       Client?      @relation(fields: [clientId, organizationId], references: [id, organizationId], onDelete: NoAction)
+  project      Project?     @relation(fields: [projectId, organizationId], references: [id, organizationId], onDelete: NoAction)
+  task         Task?        @relation(fields: [taskId, organizationId], references: [id, organizationId], onDelete: NoAction)
+
+  /// Visible-range queries: events overlapping a period inside one organization.
+  @@index([organizationId, startDateTime])
+  @@index([organizationId, assignedToId, startDateTime])
+  @@index([organizationId, projectId])
+  @@index([organizationId, clientId])
+  @@index([organizationId, taskId])
+  @@index([createdById])
+  @@map("calendar_events")
 }

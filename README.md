@@ -100,23 +100,27 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 
 | Ruta | Contenido |
 | --- | --- |
-| `/dashboard` | Resumen con datos reales: clientes, proyectos activos, tareas pendientes (vencidas y completadas); documentos (próximamente), clientes recientes, cartera por estado y actividad (pendiente) |
+| `/dashboard` | Resumen con datos reales: clientes, proyectos activos, tareas pendientes (vencidas y completadas); documentos (próximamente), clientes recientes, «Tu agenda» (próximos eventos y vencimientos), cartera por estado y actividad (pendiente) |
 | `/clients` | Listado de clientes con búsqueda, paginación y acciones Ver / Editar / Eliminar |
 | `/clients/new` | Alta de cliente (ADMIN y EMPLOYEE) |
 | `/clients/{id}` | Ficha de un cliente, con Editar y (solo ADMIN) Eliminar |
 | `/clients/{id}/edit` | Edición de cliente (ADMIN y EMPLOYEE) |
 | `/projects` | Listado de proyectos con búsqueda (proyecto o cliente), filtros (estado, prioridad, cliente) y paginación |
 | `/projects/new` | Alta de proyecto (ADMIN y EMPLOYEE) |
-| `/projects/{id}` | Ficha del proyecto: resumen, progreso real y sección «Tareas» con «Crear tarea» (Calendario, Documentos, Equipo y Actividad «Próximamente»), con Editar y (solo ADMIN) Eliminar |
+| `/projects/{id}` | Ficha del proyecto: resumen, progreso real, sección «Tareas» con «Crear tarea» y sección «Calendario» con próximos eventos (Documentos, Equipo y Actividad «Próximamente»), con Editar y (solo ADMIN) Eliminar |
 | `/projects/{id}/edit` | Edición de proyecto (ADMIN y EMPLOYEE) |
 | `/tasks` | Listado de tareas: búsqueda (tarea o proyecto), filtros (proyecto, responsable, estado, prioridad, rango de fecha límite), orden (recientes, fecha límite, prioridad) y paginación |
 | `/tasks/new` | Alta de tarea (ADMIN y EMPLOYEE); `?projectId=` preselecciona un proyecto propio |
 | `/tasks/{id}` | Ficha de la tarea con gestión rápida (estado, prioridad, responsable), Editar y (solo ADMIN) Eliminar |
 | `/tasks/{id}/edit` | Edición de tarea (ADMIN y EMPLOYEE) |
-| `/calendar`, `/documents`, `/settings` | Página «Próximamente» |
+| `/calendar` | Calendario: vistas mes, semana, día y agenda; navegación, filtros y búsqueda (ADMIN y EMPLOYEE) |
+| `/calendar/new` | Alta de evento; `?date=` y `?projectId=` preseleccionan valores propios |
+| `/calendar/{id}` | Ficha del evento con aviso de solapamiento, Editar y Eliminar (ADMIN siempre; EMPLOYEE si lo creó o lo tiene asignado) |
+| `/calendar/{id}/edit` | Edición de evento (mismas reglas) |
+| `/documents`, `/settings` | Página «Próximamente» |
 
 - **Organización activa**: `getAppContext()` (`src/server/auth/organization-context.ts`) obtiene el usuario con Auth.js y elige una de **sus** organizaciones. La cookie `sd_active_org` solo guarda la preferencia (se cambia con el selector del sidebar cuando el usuario pertenece a varias); si apunta a una organización de la que no es miembro, se ignora. Además, cada consulta vuelve a pasar por `tenantAccessService.authorize()`.
-- Las páginas llaman a servicios (`dashboardService`, `clientService`, `projectService`, `taskService`), nunca a repositorios. Un usuario con rol `CLIENT` ve el dashboard sin datos de clientes.
+- Las páginas llaman a servicios (`dashboardService`, `clientService`, `projectService`, `taskService`, `calendarEventService`), nunca a repositorios. Un usuario con rol `CLIENT` ve el dashboard sin datos de clientes.
 - Estados de UI: `loading.tsx` (esqueletos), `error.tsx` en `(app)` y en la raíz (por ejemplo, base de datos caída), `not-found` para clientes inexistentes o de otra organización, y estados vacíos.
 - Componentes en `src/app/(app)/_components/`; formato de fechas y textos en `src/lib/format.ts` (`es-ES`, zona `Europe/Madrid`). Los colores son tokens CSS (`globals.css`) con modo oscuro.
 
@@ -151,6 +155,20 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 - Server Actions en `src/app/(app)/tasks/actions.ts`: `createTask`, `updateTask`, `changeTaskStatus`, `changeTaskPriority`, `assignTask` y `deleteTask`. Las tres de cambio rápido comparten el mismo camino que `updateTask` (validación, tenant, permisos y servicio).
 - **Dashboard**: «Tareas pendientes» (abiertas, con vencidas y completadas) y «Proyectos activos» muestran datos reales según los permisos del rol.
 
+### Calendario
+
+- Modelo `CalendarEvent` (`prisma/schema.prisma`, migración `20261008090000_add_calendar_events`): título, descripción, tipo (`CalendarEventType`: MEETING, REMINDER, DELIVERY, INTERNAL, OTHER), inicio y fin como instantes, `allDay`, ubicación, creador (de la sesión), responsable opcional y enlaces opcionales a cliente, proyecto y tarea. Índices por organización + inicio, responsable, proyecto, cliente y tarea. Preparado para recurrencia, invitados y sincronización en fases posteriores (no implementados).
+- **Las tareas no se copian**: el calendario lee `Task` directamente y combina eventos y tareas en memoria en un modelo de vista (`CalendarItem` en `src/server/domain/calendar-event.ts`). Una tarea con fecha de inicio y límite se muestra como intervalo; con solo fecha límite, como vencimiento; sin fecha límite no aparece. Las COMPLETED se ven tachadas y las CANCELLED se ocultan salvo que se filtre por ese estado. Clic en tarea → `/tasks/{id}`, en evento → `/calendar/{id}`.
+- **Zona horaria**: todo en `Europe/Madrid` con los helpers de `src/lib/dates.ts` (`zonedDateTime`, `zonedDay`, `startOfZonedDay`…). Los eventos se introducen como día + hora local; un evento «todo el día» va de la medianoche local de ese día a la del siguiente (23 o 25 horas en los cambios de hora). En V1 un evento empieza y termina el mismo día (máximo 25 h).
+- **Aislamiento en tres capas**: el servicio comprueba que responsable, cliente, proyecto y tarea son de la organización activa y coherentes entre sí (el proyecto es del cliente, la tarea es del proyecto; si falta el padre se rellena a partir del hijo); el repositorio filtra todo por `organizationId`; y la base de datos tiene claves foráneas compuestas `(x_id, organization_id)` hacia `memberships`, `clients`, `projects` y `tasks` (para la de tareas se añadió `@@unique([id, organizationId])` en `Task`), además de un `CHECK` fin > inicio.
+- Borrar un cliente, proyecto o tarea **no borra** sus eventos: se desvinculan en la misma transacción.
+- **Permisos**: `calendar:read` y `calendar:write` (ADMIN, EMPLOYEE), `calendar:manage` (solo ADMIN: editar/eliminar cualquier evento) y `calendar:assignable` (ADMIN, EMPLOYEE). EMPLOYEE solo edita o elimina los eventos que creó o que tiene asignados (`canModifyEvent`). CLIENT no tiene acceso en V1 (ni páginas ni API).
+- **Solapamientos**: al guardar, si el responsable tiene otro evento con hora que se solapa, el evento se guarda igualmente y se avisa («Este evento coincide con otro evento existente.»): en la ficha del evento y como `warnings` en la API. No cuentan las tareas, los eventos de todo el día ni los que solo se tocan (10–11 y 11–12).
+- **Vistas** (`/calendar?view=month|week|day|agenda&date=YYYY-MM-DD`): mes (semanas de lunes a domingo, «+N más»), semana (rejilla horaria con eventos colocados y en paralelo si se solapan; en móvil, lista por días), día y agenda (lista cronológica paginada, la más cómoda en móvil). Navegación Anterior / Hoy / Siguiente y etiqueta del periodo. Solo se consulta el periodo visible (una consulta de eventos y otra de tareas, como máximo 500 de cada; si hay más se avisa).
+- **Filtros y búsqueda** (en servidor, en la URL): Mostrar (todos / eventos / tareas), Mis elementos, Proyecto, Usuario, Tipo de evento y Estado de tarea; búsqueda por título y descripción, nombre de proyecto o de cliente.
+- Arrastrar y soltar / redimensionar: **pospuesto a V1.5** (no se añadió ninguna librería de calendario; las vistas son código propio sin dependencias nuevas).
+- Integraciones: sección «Calendario» en la ficha del proyecto (próximos eventos y «Nuevo evento» con el proyecto preseleccionado) y panel «Tu agenda» en el dashboard (tus próximos 5 eventos y tus tareas abiertas que vencen en los próximos 7 días).
+
 **Actividad reciente (pendiente).** No existe todavía un modelo de actividad, así que el panel solo muestra un estado vacío. Para hacerlo real falta: una tabla `ActivityEvent` (organización, autor, acción, entidad, metadatos, fecha) escrita por los servicios al crear o cambiar datos, y un método de repositorio/servicio que liste los últimos eventos de una organización.
 
 ## API
@@ -175,6 +193,11 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 | GET | `/api/organizations/{organizationId}/tasks/{taskId}` | `task:read` |
 | PATCH | `/api/organizations/{organizationId}/tasks/{taskId}` | `task:write` (también estado, prioridad o responsable por separado) |
 | DELETE | `/api/organizations/{organizationId}/tasks/{taskId}` | `task:delete` (solo ADMIN) |
+| GET | `/api/organizations/{organizationId}/calendar-events?from=YYYY-MM-DD&to=YYYY-MM-DD&mine=&projectId=&userId=&eventType=&search=` (`to` exclusivo, máximo 62 días) | `calendar:read` |
+| POST | `/api/organizations/{organizationId}/calendar-events` (`date`, `startTime`/`endTime` `HH:MM` en hora de Madrid o `allDay`) | `calendar:write`; `201` con `warnings` si se solapa |
+| GET | `/api/organizations/{organizationId}/calendar-events/{eventId}` | `calendar:read` |
+| PATCH | `/api/organizations/{organizationId}/calendar-events/{eventId}` | `calendar:write` + `calendar:manage` o creador/responsable |
+| DELETE | `/api/organizations/{organizationId}/calendar-events/{eventId}` | igual que PATCH |
 
 El `organizationId` de la URL solo selecciona la organización: el servicio comprueba en base de datos que quien llama es miembro de ella antes de tocar ningún dato (si no lo es, `404`).
 
@@ -182,7 +205,7 @@ Errores: `{ "error": { "code", "message", "details?" } }` con `400`, `401`, `403
 
 Los endpoints usan la cookie de sesión de Auth.js: inicia sesión en `/login` y llama a la API desde el mismo navegador. Las rutas `/api/auth/*` las gestiona Auth.js.
 
-Usuarios del seed (contraseña: el valor de `SEED_USER_PASSWORD` de tu `.env`): `admin@acme.test` (ADMIN), `employee@acme.test` (EMPLOYEE) y `client@acme.test` (CLIENT) en Acme; `admin@globex.test` (ADMIN) en Globex. Ids de organización: Acme `018f0000-0000-7000-8000-000000000001`, Globex `…0002`.
+Usuarios del seed (contraseña: el valor de `SEED_USER_PASSWORD` de tu `.env`): `admin@acme.test` (ADMIN), `employee@acme.test` (EMPLOYEE) y `client@acme.test` (CLIENT) en Acme; `admin@globex.test` (ADMIN) en Globex. Ids de organización: Acme `018f0000-0000-7000-8000-000000000001`, Globex `…0002`. El seed incluye además 8 eventos de calendario en octubre de 2026 (6 de Acme, dos de ellos solapados a propósito, y 2 de Globex).
 
 ## Seguridad
 
