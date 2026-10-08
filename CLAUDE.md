@@ -13,12 +13,13 @@ Multi-tenant SaaS for small businesses. Full-stack Next.js (App Router), Prisma 
 - New permissions go in `src/server/auth/permissions.ts`.
 - Validate all input with Zod (`strictObject` for bodies) in `src/server/validation`. Throw `AppError` subclasses; `route()` in `src/server/http/route.ts` turns them into responses.
 - Authentication: Auth.js v5 (credentials + JWT) configured in `src/server/auth/auth.ts`. Resolve the current user only through `src/server/auth/session.ts` (`requireSessionUser` in API/actions, `requirePageUser` in pages). Never put roles in the token; authorization is always `tenantAccess.authorize()` against the DB.
+- Accounts belong to SmartHub: `/register` and `/login` create and open a SmartHub account (no organization). SmartDesk lives under `/smartdesk` with no sign-up of its own: `/smartdesk/login` signs in with the SmartHub account and `/smartdesk/empezar` creates the first organization. Post-login targets go through `safeNext` (`src/lib/redirect.ts`); never redirect to a client-sent URL as is.
 - Server Actions are entry points like Route Handlers: validate with Zod, call services, never repositories.
-- App pages live in `src/app/(app)/` and get user + active organization from `getAppContext()`. The `sd_active_org` cookie is only a hint validated against memberships; never trust a client-sent organization id without `tenantAccess.authorize()`.
+- App pages live in `src/app/smartdesk/(app)/` and get user + active organization from `getAppContext()`. The `sd_active_org` cookie is only a hint validated against memberships; never trust a client-sent organization id without `tenantAccess.authorize()`.
 - Do not pass functions (e.g. icon components) as props from Server to Client Components; let the client component import them.
 - Modules not built yet show `ComingSoon`; never fake persisted data in the UI.
 - Any id that links records across tables (e.g. a project's `clientId`, a task's `projectId`/`assigneeId`) must be checked by the service against the active organization; add a composite FK `(x_id, organization_id)` as a database-level backstop (see `Project` → `Client`, `Task` → `Project`, `Task` → `Membership`, `CalendarEvent` → `Membership`/`Client`/`Project`/`Task`).
-- Shared Zod building blocks (dates, amounts, filters, date order) live in `src/server/validation/common.ts`; shared form controls in `src/app/(app)/_components/form-controls.tsx`. Reuse them instead of copying.
+- Shared Zod building blocks (dates, amounts, filters, date order) live in `src/server/validation/common.ts`; shared form controls in `src/app/smartdesk/(app)/_components/form-controls.tsx`. Reuse them instead of copying.
 - Derived fields are computed in services, never accepted from the request (e.g. `Task.completedAt`, `createdById`, project `progress`).
 - Aggregates for lists must not be N+1: one grouped query per page (see `countsByProject` in the project repository).
 - `<select>` with `defaultValue` in action forms: give it `key={value}` so it remounts with the submitted value (React applies select defaults only on mount).

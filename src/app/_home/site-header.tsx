@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { CloseIcon, MenuIcon } from "../(app)/_components/icons";
+import { CloseIcon, MenuIcon } from "../smartdesk/(app)/_components/icons";
 import { ChevronDownIcon, LogoIcon } from "./icons";
 import { siteNavigation, type MenuItem } from "./navigation";
 

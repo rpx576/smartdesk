@@ -27,9 +27,12 @@ export async function requireSessionUser(): Promise<SessionUser> {
   return user;
 }
 
-/** For pages: redirects to the login page when not signed in. */
-export async function requirePageUser(): Promise<SessionUser> {
+/**
+ * For pages: redirects to a login page when not signed in. SmartHub's by
+ * default; SmartDesk pages pass their own, which signs in with the same account.
+ */
+export async function requirePageUser(loginPath = "/login"): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(loginPath);
   return user;
 }

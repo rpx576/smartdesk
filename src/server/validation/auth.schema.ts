@@ -18,5 +18,15 @@ export const registerSchema = z.object({
     .max(128, "La contraseña no puede superar 128 caracteres"),
 });
 
+/** SmartHub account: one sign-up for every product (no organization yet). */
+export const accountSchema = registerSchema.omit({ organizationName: true });
+
+/** First organization of a SmartHub account in SmartDesk. */
+export const organizationNameSchema = z.object({
+  organizationName: registerSchema.shape.organizationName,
+});
+
 export type LoginInput = z.output<typeof loginSchema>;
 export type RegisterInput = z.output<typeof registerSchema>;
+export type AccountInput = z.output<typeof accountSchema>;
+export type OrganizationNameInput = z.output<typeof organizationNameSchema>;

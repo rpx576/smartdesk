@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SmartDesk",
-  description: "Plataforma de gestión para pequeñas empresas",
+  title: "SmartHub",
+  description: "SmartHub: SmartDesk y el resto de soluciones para pequeñas empresas",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

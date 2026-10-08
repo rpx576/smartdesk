@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ComponentType, ReactNode, SVGProps } from "react";
-import { ArrowRightIcon, CheckCircleIcon, ClockIcon, UsersIcon } from "./(app)/_components/icons";
+import { ArrowRightIcon, CheckCircleIcon, ClockIcon, UsersIcon } from "./smartdesk/(app)/_components/icons";
 import {
   BotIcon,
   ChartIcon,

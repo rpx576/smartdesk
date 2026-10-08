@@ -21,7 +21,7 @@ export type AppContext = {
  * (checked against the database). Memoized per request.
  */
 export const getAppContext = cache(async (): Promise<AppContext> => {
-  const user = await requirePageUser();
+  const user = await requirePageUser("/smartdesk/login");
   const preferred = (await cookies()).get(ACTIVE_ORGANIZATION_COOKIE)?.value;
   const resolved = await organizationService.resolveActive(user, preferred);
 

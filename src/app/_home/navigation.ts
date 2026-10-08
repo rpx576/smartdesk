@@ -5,8 +5,8 @@
 export type MenuItem = { label: string; description?: string; href?: string };
 export type NavEntry = { label: string; href?: string; items?: MenuItem[] };
 
-/** SmartDesk, the management tool, lives behind its login at /dashboard. */
-export const SMARTDESK_HREF = "/dashboard";
+/** SmartDesk, the management tool: its own section, entered with the SmartHub account. */
+export const SMARTDESK_HREF = "/smartdesk";
 
 export const siteNavigation: NavEntry[] = [
   { label: "Inicio", href: "#inicio" },

@@ -37,6 +37,14 @@ export const organizationRepository = {
       throw error;
     }
   },
+
+  /** Creates an organization whose first ADMIN is an existing (SmartHub) user. */
+  async createForUser(userId: string, organization: { name: string; slug: string }): Promise<Organization> {
+    return getPrisma().organization.create({
+      data: { ...organization, memberships: { create: { role: "ADMIN", userId } } },
+      select: { id: true, name: true, slug: true },
+    });
+  },
 };
 
 export type OrganizationRepository = typeof organizationRepository;

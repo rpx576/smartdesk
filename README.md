@@ -96,7 +96,7 @@ Pendiente: limitar intentos de login (*rate limiting*), verificación de email, 
 
 ## Frontend de la aplicación
 
-Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que comparte un layout con sidebar (en móvil, un menú lateral basado en `<dialog>`) y cabecera.
+Las páginas autenticadas viven en el grupo de rutas `src/app/smartdesk/(app)/`, que comparte un layout con sidebar (en móvil, un menú lateral basado en `<dialog>`) y cabecera.
 
 | Ruta | Contenido |
 | --- | --- |
@@ -122,11 +122,11 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 - **Organización activa**: `getAppContext()` (`src/server/auth/organization-context.ts`) obtiene el usuario con Auth.js y elige una de **sus** organizaciones. La cookie `sd_active_org` solo guarda la preferencia (se cambia con el selector del sidebar cuando el usuario pertenece a varias); si apunta a una organización de la que no es miembro, se ignora. Además, cada consulta vuelve a pasar por `tenantAccessService.authorize()`.
 - Las páginas llaman a servicios (`dashboardService`, `clientService`, `projectService`, `taskService`, `calendarEventService`), nunca a repositorios. Un usuario con rol `CLIENT` ve el dashboard sin datos de clientes.
 - Estados de UI: `loading.tsx` (esqueletos), `error.tsx` en `(app)` y en la raíz (por ejemplo, base de datos caída), `not-found` para clientes inexistentes o de otra organización, y estados vacíos.
-- Componentes en `src/app/(app)/_components/`; formato de fechas y textos en `src/lib/format.ts` (`es-ES`, zona `Europe/Madrid`). Los colores son tokens CSS (`globals.css`) con modo oscuro.
+- Componentes en `src/app/smartdesk/(app)/_components/`; formato de fechas y textos en `src/lib/format.ts` (`es-ES`, zona `Europe/Madrid`). Los colores son tokens CSS (`globals.css`) con modo oscuro.
 
 ### CRUD de clientes desde la interfaz
 
-- Crear, editar y eliminar usan **Server Actions** (`src/app/(app)/clients/actions.ts`), que siguen el mismo camino que la API: validan con los esquemas Zod de `src/server/validation/client.schema.ts` y llaman a `clientService`, que autoriza con `tenantAccessService.authorize()`. Ni las páginas ni las acciones tocan repositorios o Prisma.
+- Crear, editar y eliminar usan **Server Actions** (`src/app/smartdesk/(app)/clients/actions.ts`), que siguen el mismo camino que la API: validan con los esquemas Zod de `src/server/validation/client.schema.ts` y llaman a `clientService`, que autoriza con `tenantAccessService.authorize()`. Ni las páginas ni las acciones tocan repositorios o Prisma.
 - La organización sale siempre de `getAppContext()` (servidor). Del formulario solo se leen los campos del cliente (`readClientForm`); un `organizationId` enviado por el navegador se descarta. El id del cliente que llega en la acción se trata como no fiable: se valida y el servicio lo busca dentro de la organización activa (otro tenant ⇒ «no encontrado»).
 - Permisos: ADMIN crea, edita y elimina; EMPLOYEE crea y edita; CLIENT no ve ni modifica clientes. La interfaz oculta lo que no se puede hacer, pero el servidor lo rechaza igualmente (probado llamando a las acciones directamente).
 - Formularios: validación en el servidor con mensajes en español, se conservan los valores tras un error, el foco va al primer campo inválido, botón desactivado mientras se guarda (sin dobles envíos). Los errores inesperados muestran un mensaje genérico y el detalle solo queda en el log del servidor.
@@ -139,7 +139,7 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 - **Aislamiento entre organizaciones en tres capas**: el servicio comprueba con el repositorio de clientes que el `clientId` recibido pertenece a la organización activa; todas las consultas del repositorio filtran por `organizationId`; y la base de datos usa una clave foránea compuesta `(client_id, organization_id)` → `clients(id, organization_id)`, de modo que PostgreSQL rechaza un proyecto apuntando a un cliente de otra organización aunque fallara el código.
 - Un cliente con proyectos no se puede eliminar (la base de datos lo impide y la interfaz lo explica); hay que eliminar o reasignar antes sus proyectos. Borrar una organización entera sí elimina sus proyectos.
 - Permisos `project:read`, `project:write` (ADMIN, EMPLOYEE) y `project:delete` (solo ADMIN) en `src/server/auth/permissions.ts`; CLIENT no tiene acceso al CRUD.
-- Mismo patrón que Clientes: Server Actions en `src/app/(app)/projects/actions.ts`, Route Handlers en `/api/organizations/{organizationId}/projects`, servicio `projectService` y repositorio `projectRepository` (único que usa Prisma).
+- Mismo patrón que Clientes: Server Actions en `src/app/smartdesk/(app)/projects/actions.ts`, Route Handlers en `/api/organizations/{organizationId}/projects`, servicio `projectService` y repositorio `projectRepository` (único que usa Prisma).
 - El **progreso** se calcula en servidor a partir de las tareas: `COMPLETED / (todas las tareas − CANCELLED)`. Las canceladas son trabajo descartado y no cuentan ni como hechas ni como pendientes; TODO, IN_PROGRESS, IN_REVIEW y BLOCKED cuentan como pendientes. Sin tareas (o solo canceladas) = 0 %. El listado obtiene los recuentos de todos sus proyectos con una sola consulta agrupada (sin N+1).
 - Eliminar un proyecto elimina también sus tareas (el diálogo de confirmación lo advierte).
 - Importes y horas aceptan coma o punto decimal (máximo dos decimales, sin separador de miles).
@@ -152,7 +152,7 @@ Las páginas autenticadas viven en el grupo de rutas `src/app/(app)/`, que compa
 - **`completedAt`** lo calcula el servicio: se fija al pasar a COMPLETED, se conserva mientras siga completada y se borra si vuelve a otro estado. Nunca se acepta del navegador.
 - **Fechas**: igual que en Proyectos (fechas de calendario a medianoche UTC, sin desfases). «Vencida» = tarea abierta con fecha límite anterior al día de hoy en `Europe/Madrid` (`src/lib/dates.ts`).
 - Permisos `task:read`, `task:write` (crear, editar, cambiar estado/prioridad, asignar; ADMIN y EMPLOYEE) y `task:delete` (solo ADMIN). CLIENT no tiene acceso. La interfaz usa `taskCapabilities(role)`.
-- Server Actions en `src/app/(app)/tasks/actions.ts`: `createTask`, `updateTask`, `changeTaskStatus`, `changeTaskPriority`, `assignTask` y `deleteTask`. Las tres de cambio rápido comparten el mismo camino que `updateTask` (validación, tenant, permisos y servicio).
+- Server Actions en `src/app/smartdesk/(app)/tasks/actions.ts`: `createTask`, `updateTask`, `changeTaskStatus`, `changeTaskPriority`, `assignTask` y `deleteTask`. Las tres de cambio rápido comparten el mismo camino que `updateTask` (validación, tenant, permisos y servicio).
 - **Dashboard**: «Tareas pendientes» (abiertas, con vencidas y completadas) y «Proyectos activos» muestran datos reales según los permisos del rol.
 
 ### Calendario
