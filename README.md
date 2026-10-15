@@ -2,7 +2,26 @@
 
 Plataforma SaaS multi-tenant de gestión para pequeñas empresas: clientes, proyectos, tareas, calendario, documentos, usuarios y roles.
 
-> Estado: base arquitectónica, autenticación con Auth.js (registro de empresa, login y logout), dashboard de la aplicación y primer módulo (clientes: API, listado y ficha).
+> Estado: web pública de SmartHub (inicio, soluciones, blog y contacto), base arquitectónica, autenticación con Auth.js (registro de empresa, login y logout), dashboard de la aplicación y primer módulo (clientes: API, listado y ficha).
+
+## Web pública de SmartHub
+
+Páginas sin sesión que comparten la cabecera de `src/app/_home/` (el menú se define en `navigation.ts`).
+
+| Ruta | Contenido |
+| --- | --- |
+| `/` | Inicio de SmartHub |
+| `/soluciones` | Servicios (SmartDesk, SmartAI, SmartWeb), buscador por necesidad y proceso de trabajo (`src/app/soluciones/`) |
+| `/blog` | Artículos sobre facturación, IA y webs para empresas, con filtros, búsqueda y guardados en el navegador (`src/app/blog/`) |
+| `/contacto` | Formulario que abre WhatsApp con el mensaje ya escrito (enlace `wa.me`, sin API de pago); el número está en `src/app/contacto/whatsapp.ts` |
+| `/login`, `/register`, `/cuenta` | Acceso con cuenta SmartHub, con el diseño compartido de `src/app/_access/` |
+| `/smartdesk/login`, `/smartdesk/empezar` | Acceso a SmartDesk y alta de empresa, con el mismo diseño |
+
+Para ver la web pública en local basta con `npm install` y `npm run dev` (http://localhost:3000). Las páginas de acceso y SmartDesk necesitan además la base de datos (ver «Puesta en marcha»).
+
+## Integración continua
+
+`.github/workflows/ci.yml` ejecuta `npm run typecheck`, `npm run lint` y `npm test` en cada pull request y en cada push a `main` y `develop`. Antes de abrir un PR conviene lanzar los tres en local.
 
 ## Stack
 
