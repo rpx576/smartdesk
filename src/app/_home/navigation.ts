@@ -9,8 +9,8 @@ export type NavEntry = { label: string; href?: string; items?: MenuItem[] };
 export const SMARTDESK_HREF = "/smartdesk";
 
 export const siteNavigation: NavEntry[] = [
-  { label: "Inicio", href: "#inicio" },
-  { label: "Soluciones", href: "#soluciones" },
+  { label: "Inicio", href: "/#inicio" },
+  { label: "Soluciones", href: "/soluciones" },
   {
     label: "Productos",
     items: [
@@ -26,15 +26,19 @@ export const siteNavigation: NavEntry[] = [
   { label: "Precios" },
   {
     label: "Recursos",
-    items: [{ label: "Blog" }, { label: "Guías" }, { label: "Centro de ayuda" }],
+    items: [
+      { label: "Blog", description: "Noticias sobre facturación, IA y webs para empresas", href: "/blog" },
+      { label: "Guías" },
+      { label: "Centro de ayuda" },
+    ],
   },
   {
     label: "Empresa",
     items: [
       { label: "Sobre nosotros" },
-      { label: "Opiniones de clientes", href: "#opiniones" },
-      { label: "Contacto", href: "#contacto" },
+      { label: "Opiniones de clientes", href: "/#opiniones" },
+      { label: "Contacto", href: "/contacto" },
     ],
   },
-  { label: "Contacto", href: "#contacto" },
+  { label: "Contacto", href: "/contacto" },
 ];
