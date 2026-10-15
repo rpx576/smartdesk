@@ -1,15 +1,25 @@
-import Link from "next/link";
+import { DeskIcon, GlobeIcon, SmartHubMark, SparklesIcon } from "@/app/_access/access-icons";
+import { AccessShell } from "@/app/_access/access-shell";
+
+const highlights = [
+  { icon: DeskIcon, label: "SmartDesk: clientes, proyectos y tareas", tile: "bg-blue-100 text-blue-600" },
+  { icon: SparklesIcon, label: "SmartAI: automatización e inteligencia artificial", tile: "bg-indigo-100 text-indigo-600" },
+  { icon: GlobeIcon, label: "SmartWeb: webs, tiendas online y landing pages", tile: "bg-violet-100 text-violet-600" },
+];
 
 /** SmartHub account screens: sign-in, sign-up and the account page. */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-16 font-sans dark:bg-black">
-      <main className="flex w-full max-w-sm flex-col gap-6">
-        <Link href="/" className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          SmartHub
-        </Link>
-        {children}
-      </main>
-    </div>
+    <AccessShell
+      accent="Hub"
+      eyebrow="Una cuenta para todo"
+      tagline="Todas tus soluciones digitales, en un solo lugar."
+      description="Con tu cuenta SmartHub entras en SmartDesk y en el resto de productos, sin registrarte otra vez."
+      highlights={highlights}
+      mark={SmartHubMark}
+      subtitle="Tu cuenta para todos los productos"
+    >
+      {children}
+    </AccessShell>
   );
 }

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LoginForm } from "@/app/(auth)/login/login-form";
+import { accessLinkClass, accessTextClass, accessTitleClass } from "@/app/_access/styles";
 import { getSessionUser } from "@/server/auth/session";
+import { SmartDeskLoginForm } from "./smartdesk-login-form";
 
 export const metadata: Metadata = { title: "Entrar · SmartDesk" };
 
@@ -12,16 +13,18 @@ export default async function SmartDeskLoginPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">Entra con tu cuenta SmartHub</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Usa el mismo email y contraseña que en SmartHub.
-        </p>
+      <div className="flex flex-col gap-2">
+        <h1 className={accessTitleClass}>Entra con tu cuenta SmartHub</h1>
+        <p className={accessTextClass}>Usa el mismo email y contraseña que en SmartHub.</p>
       </div>
-      <LoginForm next="/smartdesk" />
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        ¿Aún no tienes cuenta SmartHub?{" "}
-        <Link href="/register?next=/smartdesk" className="font-medium underline">
+      <SmartDeskLoginForm />
+      <p className="text-sm text-slate-600">
+        ¿Aún no tienes cuenta SmartHub?
+        <br />
+        <Link
+          href="/register?next=/smartdesk"
+          className={accessLinkClass}
+        >
           Crear cuenta en SmartHub
         </Link>
       </p>

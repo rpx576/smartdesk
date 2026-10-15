@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
+import { AccessError, AccessField, AccessSubmit } from "@/app/_access/access-field";
+import { LockIcon, MailIcon, UserIcon } from "@/app/_access/access-icons";
 import { register } from "../actions";
-import { FormError, FormField, submitClass } from "../form-field";
 
 /** SmartHub sign-up form: just the person; organizations are created in each product. */
 export function RegisterForm({ next }: { next: string }) {
@@ -13,32 +14,35 @@ export function RegisterForm({ next }: { next: string }) {
   return (
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="next" value={next} />
-      <FormError message={state?.error} />
-      <FormField
+      <AccessError message={state?.error} />
+      <AccessField
         label="Tu nombre"
         name="name"
         autoComplete="name"
+        icon={UserIcon}
+        placeholder="Nombre y apellidos"
         errors={errors?.name}
         defaultValue={values?.name}
       />
-      <FormField
+      <AccessField
         label="Email"
         name="email"
         type="email"
         autoComplete="email"
+        icon={MailIcon}
+        placeholder="tu@empresa.com"
         errors={errors?.email}
         defaultValue={values?.email}
       />
-      <FormField
+      <AccessField
         label="Contraseña (mínimo 12 caracteres)"
         name="password"
         type="password"
         autoComplete="new-password"
+        icon={LockIcon}
         errors={errors?.password}
       />
-      <button type="submit" disabled={pending} className={submitClass}>
-        {pending ? "Creando cuenta…" : "Crear cuenta"}
-      </button>
+      <AccessSubmit pending={pending} label="Crear cuenta" pendingLabel="Creando cuenta…" />
     </form>
   );
 }

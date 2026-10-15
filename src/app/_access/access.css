@@ -1,0 +1,141 @@
+/*
+ * Animated background of the SmartHub and SmartDesk account screens (sign-in,
+ * sign-up, account, first organization). Only slow transform/opacity
+ * animations, so it stays smooth; everything stops for people who prefer
+ * reduced motion.
+ */
+.sd-access-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f5f8ff 0%, #e9efff 48%, #f1edff 100%);
+}
+
+.sd-grid {
+  position: absolute;
+  inset: -56px;
+  background-image:
+    linear-gradient(rgb(99 102 241 / 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(99 102 241 / 0.07) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at 72% 45%, black 5%, transparent 65%);
+  animation: sd-grid 30s linear infinite;
+}
+
+.sd-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(72px);
+  will-change: transform;
+}
+
+.sd-blob--blue {
+  left: -14vmax;
+  top: -16vmax;
+  width: 48vmax;
+  height: 48vmax;
+  background: radial-gradient(circle at 35% 35%, rgb(96 140 255 / 0.55), transparent 68%);
+  animation: sd-drift-a 24s ease-in-out infinite alternate;
+}
+
+.sd-blob--violet {
+  left: -10vmax;
+  bottom: -18vmax;
+  width: 40vmax;
+  height: 40vmax;
+  background: radial-gradient(circle, rgb(167 139 250 / 0.5), transparent 68%);
+  animation: sd-drift-b 30s ease-in-out infinite alternate;
+}
+
+.sd-blob--sky {
+  right: -16vmax;
+  top: 6vmax;
+  width: 44vmax;
+  height: 44vmax;
+  background: radial-gradient(circle, rgb(125 175 255 / 0.45), transparent 68%);
+  animation: sd-drift-c 34s ease-in-out infinite alternate;
+}
+
+/* Soft vertical light, like sun through the windows of a glass office. */
+.sd-beam {
+  position: absolute;
+  top: -10%;
+  height: 120%;
+  width: 9vw;
+  background: linear-gradient(180deg, transparent, rgb(255 255 255 / 0.55) 40%, transparent);
+  transform: skewX(-12deg);
+  animation: sd-beam 12s ease-in-out infinite;
+}
+
+.sd-beam--1 { right: 26%; animation-delay: 0s; }
+.sd-beam--2 { right: 12%; width: 5vw; animation-delay: -4s; }
+.sd-beam--3 { right: 2%; width: 7vw; animation-delay: -8s; }
+
+.sd-waves {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sd-wave {
+  fill: none;
+  stroke-width: 1.6;
+  animation: sd-wave 16s ease-in-out infinite alternate;
+}
+
+.sd-wave--slow {
+  animation-duration: 24s;
+  animation-direction: alternate-reverse;
+}
+
+.sd-ribbon {
+  fill: rgb(255 255 255 / 0.4);
+  animation: sd-wave 22s ease-in-out infinite alternate-reverse;
+}
+
+/* Entrance of the page content. */
+.sd-rise {
+  animation: sd-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.sd-rise--late {
+  animation-delay: 0.12s;
+}
+
+@keyframes sd-grid {
+  to { transform: translate3d(56px, 56px, 0); }
+}
+
+@keyframes sd-drift-a {
+  to { transform: translate3d(9vmax, 7vmax, 0) scale(1.12); }
+}
+
+@keyframes sd-drift-b {
+  to { transform: translate3d(11vmax, -7vmax, 0) scale(0.9); }
+}
+
+@keyframes sd-drift-c {
+  to { transform: translate3d(-10vmax, 6vmax, 0) scale(1.1); }
+}
+
+@keyframes sd-beam {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.9; }
+}
+
+@keyframes sd-wave {
+  to { transform: translate3d(-4%, 3%, 0); }
+}
+
+@keyframes sd-rise {
+  from { opacity: 0; transform: translate3d(0, 16px, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-access-bg *,
+  .sd-rise {
+    animation: none !important;
+  }
+}
