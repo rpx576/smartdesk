@@ -46,3 +46,6 @@ next-env.d.ts
 
 # Claude Desktop local configuration
 .claude/
+
+# Local Netlify folder
+.netlify

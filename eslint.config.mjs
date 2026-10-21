@@ -49,6 +49,8 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    // Output of the Netlify CLI (local builds and deploys).
+    ".netlify/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
