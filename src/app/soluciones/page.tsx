@@ -353,6 +353,8 @@ export default function SolutionsPage() {
           <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2">
             <li><Link href="/" className="hover:text-white">Inicio</Link></li>
             <li><Link href="/smartdesk" className="hover:text-white">SmartDesk</Link></li>
+            <li><Link href="/smartai" className="hover:text-white">SmartAI</Link></li>
+            <li><Link href="/smartweb" className="hover:text-white">SmartWeb</Link></li>
             <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
             <li><Link href="/contacto" className="hover:text-white">Contacto</Link></li>
           </ul>

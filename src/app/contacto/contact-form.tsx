@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ComponentType, type FormEvent, type SVGProps } from "react";
+import { DEFAULT_LOCALE, getDictionary, type Locale } from "@/i18n";
 import { BuildingIcon, ChatPhoneIcon, DoubleCheckIcon, MailIcon, SendIcon, UserIcon } from "./contact-icons";
 import {
   CONTACT_TOPICS,
@@ -10,6 +11,7 @@ import {
   buildContactMessage,
   validateContact,
   whatsappUrl,
+  type ContactCopy,
   type ContactErrors,
   type ContactInput,
 } from "./whatsapp";
@@ -21,6 +23,7 @@ const inputClass =
 
 type FieldProps = {
   id: keyof ContactInput;
+  optionalLabel: string;
   label: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   value: string;
@@ -33,13 +36,13 @@ type FieldProps = {
   maxLength?: number;
 };
 
-function Field({ id, label, icon: FieldIcon, value, onChange, error, optional, type = "text", ...rest }: FieldProps) {
+function Field({ id, label, icon: FieldIcon, value, onChange, error, optional, optionalLabel, type = "text", ...rest }: FieldProps) {
   const errorId = `${id}-error`;
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="flex items-center justify-between text-sm font-medium text-slate-200">
         {label}
-        {optional && <span className="text-xs font-normal text-slate-500">Opcional</span>}
+        {optional && <span className="text-xs font-normal text-slate-500">{optionalLabel}</span>}
       </label>
       <div className={`ct-input flex items-center gap-3 rounded-xl px-3.5 ${error ? "ct-input--error" : ""}`}>
         <FieldIcon className="size-5 shrink-0 text-emerald-300/70" />
@@ -65,10 +68,10 @@ function Field({ id, label, icon: FieldIcon, value, onChange, error, optional, t
 }
 
 /** Live preview of the message as it will arrive on WhatsApp. */
-function ChatPreview({ text }: { text: string }) {
-  const time = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(new Date());
+function ChatPreview({ text, copy }: { text: string; copy: ContactCopy }) {
+  const time = new Intl.DateTimeFormat(copy.timeLocale, { hour: "2-digit", minute: "2-digit" }).format(new Date());
   return (
-    <div className="ct-phone mx-auto w-full max-w-[22rem]" aria-label="Vista previa del mensaje">
+    <div className="ct-phone mx-auto w-full max-w-[22rem]" aria-label={copy.previewAria}>
       <div className="ct-phone__screen">
         <div className="flex items-center gap-3 border-b border-white/10 bg-[#0b2a26] px-4 py-3">
           <span className="grid size-9 place-items-center rounded-full bg-emerald-500 text-sm font-bold text-emerald-950">
@@ -83,7 +86,7 @@ function ChatPreview({ text }: { text: string }) {
           </div>
         </div>
         <div className="ct-chat flex min-h-72 flex-col justify-end gap-2 p-4">
-          <p className="mx-auto rounded-md bg-white/10 px-2.5 py-1 text-[11px] text-slate-300">Hoy</p>
+          <p className="mx-auto rounded-md bg-white/10 px-2.5 py-1 text-[11px] text-slate-300">{copy.today}</p>
           <div className="ct-bubble ml-auto max-w-[88%] rounded-2xl rounded-tr-sm px-3 pb-1.5 pt-2 text-[13px] leading-snug text-white">
             <p className="whitespace-pre-wrap break-words">{text}</p>
             <p className="mt-1 flex items-center justify-end gap-1 text-[10px] text-emerald-100/70">
@@ -101,12 +104,13 @@ function ChatPreview({ text }: { text: string }) {
  * Contact form: on submit it opens WhatsApp (app on mobile, WhatsApp Web on a
  * computer) with SmartHub's chat and the message already written.
  */
-export function ContactForm() {
+export function ContactForm({ locale = DEFAULT_LOCALE }: { locale?: Locale }) {
+  const copy = getDictionary(locale).contact.form;
   const [values, setValues] = useState<ContactInput>(empty);
   const [errors, setErrors] = useState<ContactErrors>({});
   const [sentUrl, setSentUrl] = useState<string | null>(null);
 
-  const message = buildContactMessage(values);
+  const message = buildContactMessage(values, copy);
 
   function update<K extends keyof ContactInput>(key: K, value: ContactInput[K]) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -115,7 +119,7 @@ export function ContactForm() {
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const found = validateContact(values);
+    const found = validateContact(values, copy);
     setErrors(found);
     if (Object.keys(found).length > 0) {
       const first = (["name", "email", "message"] as const).find((key) => found[key]);
@@ -136,14 +140,14 @@ export function ContactForm() {
             <span className="grid size-16 place-items-center rounded-full bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/40">
               <DoubleCheckIcon className="size-8" />
             </span>
-            <h2 className="mt-5 text-2xl font-semibold text-white">Te hemos abierto WhatsApp</h2>
+            <h2 className="mt-5 text-2xl font-semibold text-white">{copy.sentTitle}</h2>
             <p className="mt-2 max-w-sm text-slate-300">
-              Tu mensaje ya está escrito en el chat de SmartHub. Solo falta que pulses enviar.
+              {copy.sentText}
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <a href={sentUrl} target="_blank" rel="noopener noreferrer" className="ct-btn">
                 <ChatPhoneIcon className="size-5" />
-                Abrir WhatsApp otra vez
+                {copy.openAgain}
               </a>
               <button
                 type="button"
@@ -153,47 +157,50 @@ export function ContactForm() {
                 }}
                 className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-slate-200 outline-none transition-colors hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-emerald-400/60"
               >
-                Escribir otro mensaje
+                {copy.writeAnother}
               </button>
             </div>
           </div>
         ) : (
           <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
             <div>
-              <h2 className="text-xl font-semibold text-white">Cuéntanos qué necesitas</h2>
+              <h2 className="text-xl font-semibold text-white">{copy.heading}</h2>
               <p className="mt-1 text-sm text-slate-400">
-                Al enviar se abre WhatsApp con tu mensaje listo para mandar.
+                {copy.sub}
               </p>
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
               <Field
                 id="name"
-                label="Nombre"
+                label={copy.name}
+                optionalLabel={copy.optional}
                 icon={UserIcon}
                 value={values.name}
                 onChange={(value) => update("name", value)}
                 error={errors.name}
                 autoComplete="name"
-                placeholder="Tu nombre"
+                placeholder={copy.namePlaceholder}
                 maxLength={NAME_MAX}
               />
               <Field
                 id="company"
-                label="Empresa"
+                label={copy.company}
+                optionalLabel={copy.optional}
                 icon={BuildingIcon}
                 value={values.company}
                 onChange={(value) => update("company", value)}
                 optional
                 autoComplete="organization"
-                placeholder="Nombre de tu empresa"
+                placeholder={copy.companyPlaceholder}
                 maxLength={NAME_MAX}
               />
             </div>
 
             <Field
               id="email"
-              label="Email"
+              label={copy.email}
+              optionalLabel={copy.optional}
               icon={MailIcon}
               type="email"
               value={values.email}
@@ -201,11 +208,11 @@ export function ContactForm() {
               error={errors.email}
               optional
               autoComplete="email"
-              placeholder="tu@empresa.com"
+              placeholder={copy.emailPlaceholder}
             />
 
             <fieldset>
-              <legend className="text-sm font-medium text-slate-200">¿Sobre qué quieres hablar?</legend>
+              <legend className="text-sm font-medium text-slate-200">{copy.topicLegend}</legend>
               <div className="mt-2 flex flex-wrap gap-2">
                 {CONTACT_TOPICS.map((topic) => (
                   <label key={topic} className="ct-chip">
@@ -217,7 +224,7 @@ export function ContactForm() {
                       onChange={() => update("topic", topic)}
                       className="sr-only"
                     />
-                    {topic}
+                    {copy.topics[topic]}
                   </label>
                 ))}
               </div>
@@ -225,7 +232,7 @@ export function ContactForm() {
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="message" className="text-sm font-medium text-slate-200">
-                Mensaje
+                {copy.message}
               </label>
               <div className={`ct-input rounded-xl px-3.5 ${errors.message ? "ct-input--error" : ""}`}>
                 <textarea
@@ -237,7 +244,7 @@ export function ContactForm() {
                   maxLength={MESSAGE_MAX}
                   aria-invalid={errors.message ? true : undefined}
                   aria-describedby={errors.message ? "message-error message-count" : "message-count"}
-                  placeholder="Por ejemplo: quiero una demo de SmartDesk para mi equipo de 8 personas."
+                  placeholder={copy.messagePlaceholder}
                   className={`${inputClass} resize-y`}
                 />
               </div>
@@ -257,7 +264,7 @@ export function ContactForm() {
 
             <button type="submit" className="ct-btn mt-1 w-full sm:w-auto sm:self-start">
               <SendIcon className="size-5" />
-              Enviar por WhatsApp
+              {copy.submit}
             </button>
           </form>
         )}
@@ -265,9 +272,9 @@ export function ContactForm() {
 
       <aside className="lg:sticky lg:top-24">
         <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.3em] text-emerald-300/80">
-          Así nos llegará
+          {copy.previewTitle}
         </p>
-        <ChatPreview text={message} />
+        <ChatPreview text={message} copy={copy} />
       </aside>
     </div>
   );

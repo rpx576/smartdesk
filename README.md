@@ -12,6 +12,7 @@ Páginas sin sesión que comparten la cabecera de `src/app/_home/` (el menú se 
 | --- | --- |
 | `/` | Inicio de SmartHub |
 | `/soluciones` | Servicios (SmartDesk, SmartAI, SmartWeb), buscador por necesidad y proceso de trabajo (`src/app/soluciones/`) |
+| `/smartai` | SmartAI Studio: 5 asistentes de IA (presupuestos, respuestas a clientes, resumen y tareas, redes, reseñas) que responden en streaming desde `POST /api/smartai`. Con `ANTHROPIC_API_KEY` usa Claude (`SMARTAI_MODEL`, por defecto `claude-opus-5-5`); sin clave funciona en modo demostración con plantillas. Límite de peticiones por IP en memoria (`src/server/services/smartai.service.ts`) |
 | `/blog` | Artículos sobre facturación, IA y webs para empresas, con filtros, búsqueda y guardados en el navegador (`src/app/blog/`) |
 | `/contacto` | Formulario que abre WhatsApp con el mensaje ya escrito (enlace `wa.me`, sin API de pago); el número está en `src/app/contacto/whatsapp.ts` |
 | `/login`, `/register`, `/cuenta` | Acceso con cuenta SmartHub, con el diseño compartido de `src/app/_access/` |

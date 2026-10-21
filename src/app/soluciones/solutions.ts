@@ -47,7 +47,7 @@ export const solutions: Solution[] = [
     name: "SmartAI",
     tagline: "La inteligencia artificial trabajando para ti",
     summary:
-      "Automatizamos las tareas repetitivas de tu negocio y creamos asistentes de IA a tu medida, conectados con las herramientas que ya usas.",
+      "Asistentes de IA que redactan presupuestos, contestan a tus clientes, resumen reuniones en tareas y crean contenido para redes. Pruébalo gratis en SmartAI Studio y, cuando quieras, lo adaptamos a tu negocio.",
     audience: "Empresas que pierden horas en trabajo manual: presupuestos, respuestas, informes o copiar datos.",
     before: "Horas cada semana copiando datos, redactando lo mismo y respondiendo las mismas preguntas.",
     after: "Procesos que se hacen solos y un asistente que prepara documentos y resúmenes en segundos.",
@@ -59,8 +59,8 @@ export const solutions: Solution[] = [
       { title: "Integraciones", text: "Trabaja con las herramientas que ya tienes, sin cambiar de sistema." },
       { title: "Privacidad", text: "Tus datos se usan solo para tu proyecto y bajo tu control." },
     ],
-    availability: "Proyecto a medida. Estudiamos tu caso y te proponemos qué automatizar primero.",
-    cta: { label: "Hablar sobre SmartAI", href: "/contacto" },
+    availability: "Pruébalo ya gratis en SmartAI Studio, sin registro. Para tu empresa, lo configuramos con tus precios, tu tono y tus herramientas.",
+    cta: { label: "Probar SmartAI gratis", href: "/smartai" },
   },
   {
     id: "smartweb",
@@ -79,8 +79,8 @@ export const solutions: Solution[] = [
       { title: "SEO y velocidad", text: "Bien construida para cargar rápido y aparecer en buscadores." },
       { title: "Mantenimiento", text: "Actualizaciones, cambios y soporte cuando lo necesites." },
     ],
-    availability: "Proyecto a medida. Te enseñamos una propuesta de diseño antes de empezar.",
-    cta: { label: "Pedir mi web", href: "/contacto" },
+    availability: "Diséñala ya en SmartWeb Studio: ves cómo queda y cuánto cuesta al momento. Propuesta de diseño en 72 horas.",
+    cta: { label: "Diseñar mi web", href: "/smartweb" },
   },
 ];
 

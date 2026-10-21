@@ -1,0 +1,280 @@
+import type { Dictionary } from "./es";
+
+/** English version. It must have exactly the keys of the Spanish dictionary (checked by the compiler and by a test). */
+export const en: Dictionary = {
+  htmlLang: "en",
+  ogLocale: "en_GB",
+  siteDescription: "SmartHub: SmartDesk and the rest of the digital solutions for small businesses",
+
+  language: {
+    label: "Language",
+    names: { es: "Español", en: "English" },
+    short: { es: "ES", en: "EN" },
+    switchTo: "Switch language to {language}",
+    spanishOnly: "Spanish only",
+  },
+
+  nav: {
+    mainAria: "Main",
+    footerAria: "Footer",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
+    soon: "Soon",
+    comingSoon: "Coming soon",
+    home: "Home",
+    solutions: "Solutions",
+    products: "Products",
+    pricing: "Pricing",
+    blog: "Blog",
+    company: "Company",
+    contact: "Contact",
+    about: "About us",
+    idea: "Our idea",
+    smartdesk: { label: "SmartDesk", description: "Business management: clients, projects, tasks and calendar" },
+    smartai: { label: "SmartAI", description: "AI assistant: quotes, replies and tasks in seconds" },
+    smartweb: { label: "SmartWeb", description: "Design your website or online shop and see the price instantly" },
+  },
+
+  header: { contact: "Contact", login: "Sign in", start: "Get started" },
+
+  tabs: {
+    aria: "Main navigation",
+    more: "More",
+    menuTitle: "Menu",
+    menuAria: "SmartHub menu",
+    close: "Close",
+    closeMenu: "Close menu",
+    sections: { products: "Products", resources: "Resources", company: "Company" },
+    texts: {
+      smartdesk: "Business management",
+      smartai: "AI assistant",
+      smartweb: "Your website or online shop",
+      blog: "Guides and news",
+      pricing: "Plans and prices",
+      idea: "Why SmartHub exists",
+      contact: "Tell us your idea",
+      about: "The team",
+    },
+  },
+
+  footer: { rights: "All rights reserved." },
+
+  home: {
+    metaTitle: "SmartHub · Digital solutions for businesses",
+    metaDescription:
+      "Business management, automation, artificial intelligence and web development in a single platform.",
+    hero: {
+      badge: "Digital solutions for businesses",
+      titleStart: "Everything your business needs to",
+      titleEmphasis: "work better.",
+      text: "Business management, automation and artificial intelligence in a single platform. Digital solutions designed to help your business grow.",
+      primary: "Get started",
+      secondary: "See solutions",
+      highlights: [
+        { title: "Easy to use", text: "No complications" },
+        { title: "Scalable", text: "Grows with your business" },
+        { title: "Secure", text: "Your data, protected" },
+      ],
+    },
+    services: {
+      label: "Our solutions",
+      title: "Digital services to drive your business",
+      text: "Tools and solutions designed to improve productivity, automate processes and take your company to the next level.",
+      items: [
+        {
+          subtitle: "Business management",
+          description: "Organise clients, projects, tasks and teams from a single platform.",
+          features: ["Clients and projects", "Tasks and calendar", "Documents and team", "Dashboard and reports", "AI integration"],
+          linkLabel: "Open SmartDesk",
+        },
+        {
+          subtitle: "Automation and AI",
+          description:
+            "Automate processes, generate documents and use artificial intelligence to save time and get better results.",
+          features: [
+            "Custom assistants",
+            "Document generation",
+            "Data analysis",
+            "Task automation",
+            "Integration with your tools",
+          ],
+          linkLabel: "Try SmartAI for free",
+        },
+        {
+          subtitle: "Digital development",
+          description:
+            "We design and build modern, fast websites tailored to the needs of your business.",
+          features: ["Corporate websites", "Online shops", "Landing pages", "Web applications", "Maintenance and support"],
+          linkLabel: "Design my website with SmartWeb",
+        },
+      ],
+    },
+    previews: {
+      dashboard: { title: "Dashboard", cards: ["Clients", "Projects", "Tasks", "Events"] },
+      assistant: {
+        greeting: "Hi, I'm your AI assistant",
+        question: "How can I help you today?",
+        chips: ["Generate a quote", "Analyse project data", "Summarise conversations"],
+      },
+      website: {
+        brand: "Your Business",
+        menu: "Home · Services · Contact",
+        headline: ["Your business", "in the digital world"],
+        button: "Get started",
+      },
+    },
+    idea: {
+      label: "Our idea",
+      titleStart: "Fewer scattered tools.",
+      titleEmphasis: "More business.",
+      p1: "In most small businesses the work is spread all over the place: clients in a spreadsheet, tasks on sticky notes, appointments across several diaries and projects lost between emails. Each tool solves one part and none of them talks to the others.",
+      p2: "SmartHub was created to bring those pieces together. One account from which you run your business, automate the repetitive work and face the world with a website that works for you.",
+      points: [
+        { title: "One place", text: "for your business information" },
+        { title: "One team", text: "working on the same data" },
+        { title: "One provider", text: "that understands your whole journey" },
+      ],
+    },
+    chaos: {
+      status: "All up to date",
+      showBefore: "See how it was before",
+      showAfter: "Organise with SmartHub",
+      pieces: [
+        { before: "Clients in a spreadsheet", after: "Clients" },
+        { before: "Tasks on sticky notes", after: "Tasks" },
+        { before: "Appointments in three diaries", after: "Calendar" },
+        { before: "Projects by email", after: "Projects" },
+        { before: "A website nobody updates", after: "Your website" },
+        { before: "Hours spent copying data", after: "Automation" },
+      ],
+    },
+    scope: [
+      "Clients",
+      "Projects",
+      "Tasks",
+      "Calendar",
+      "Teams and permissions",
+      "AI assistants",
+      "Automation",
+      "Document generation",
+      "Corporate websites",
+      "Online shops",
+      "Landing pages",
+      "Web applications",
+    ],
+    ecosystem: {
+      label: "An ecosystem, not a list of products",
+      title: "Each piece makes the others better",
+      text: "Your website attracts clients, SmartDesk organises them and AI takes care of the repetitive work. Tap each piece to see what it brings.",
+      account: "One account",
+      nodes: {
+        smartweb: {
+          role: "Attracts",
+          text: "Your website is the front door. It presents your business, captures leads and sells while you get on with something else.",
+          link: "Every contact that arrives can become a client inside SmartDesk.",
+        },
+        smartdesk: {
+          role: "Organises",
+          text: "The operations centre. Clients, projects, tasks and calendar connected, so the team knows what to do, for whom and by when.",
+          link: "It is the heart of the ecosystem: this is where the information the other pieces use lives.",
+        },
+        smartai: {
+          role: "Automates",
+          text: "Artificial intelligence handles the repetitive work: drafting, summarising, sorting and moving data from one place to another.",
+          link: "It works with the data you already have, so you do not start from scratch.",
+        },
+      },
+    },
+    values: {
+      label: "What drives us",
+      title: "Technology designed for people who have no time for technology",
+      items: [
+        {
+          title: "Built for small businesses, not multinationals",
+          text: "Big companies have an IT department. You have little time. That is why every SmartHub tool can be understood in minutes, with no courses or consultants.",
+        },
+        {
+          title: "One account for everything",
+          text: "You sign up once with SmartHub and use the same account to get into SmartDesk and every service you add.",
+        },
+        {
+          title: "Your data, in your own space",
+          text: "Each company works in its own organisation, with roles and permissions to decide who sees and who edits what.",
+        },
+        {
+          title: "Technology that makes sense",
+          text: "We only automate and add AI where it genuinely saves you time. No showcase features.",
+        },
+        {
+          title: "Grow at your own pace",
+          text: "Start with what is most urgent and add pieces when you need them. Everything fits together because it was designed to from day one.",
+        },
+      ],
+    },
+    cta: {
+      badge: "Ready to start?",
+      title: "Take your business to the next level",
+      text: "Create your account, start organising your business with SmartDesk and tell us what else you need. We build it with you.",
+      primary: "Get started",
+      secondary: "Contact sales",
+      tagline: "Digital solutions for a better future",
+    },
+  },
+
+  contact: {
+    metaTitle: "Contact · SmartHub",
+    metaDescription: "Message us on WhatsApp at {phone} or leave your message and we will get back to you.",
+    back: "Back to home",
+    badge: "Direct support on WhatsApp",
+    title: "Let's talk",
+    intro:
+      "No forms that get lost in a mailbox: your message reaches our WhatsApp and we reply in the same chat.",
+    openChat: "Open WhatsApp chat",
+    call: "Call now",
+    howAria: "How it works",
+    formAria: "Contact form",
+    steps: [
+      { title: "Fill in the form", text: "Your name, subject and what you need." },
+      { title: "WhatsApp opens", text: "With your message already written in our chat." },
+      { title: "Press send", text: "And we carry on the conversation on WhatsApp." },
+    ],
+    form: {
+      sentTitle: "We have opened WhatsApp for you",
+      sentText: "Your message is already written in the SmartHub chat. You only need to press send.",
+      openAgain: "Open WhatsApp again",
+      writeAnother: "Write another message",
+      heading: "Tell us what you need",
+      sub: "When you send, WhatsApp opens with your message ready to go.",
+      name: "Name",
+      namePlaceholder: "Your name",
+      company: "Company",
+      companyPlaceholder: "Your company name",
+      email: "Email",
+      emailPlaceholder: "you@company.com",
+      optional: "Optional",
+      topicLegend: "What would you like to talk about?",
+      topics: { SmartDesk: "SmartDesk", SmartAI: "SmartAI", SmartWeb: "SmartWeb", Otro: "Other" },
+      message: "Message",
+      messagePlaceholder: "For example: I would like a SmartDesk demo for my team of 8 people.",
+      submit: "Send via WhatsApp",
+      previewTitle: "This is how it will reach us",
+      previewAria: "Message preview",
+      today: "Today",
+      timeLocale: "en-GB",
+      errors: {
+        name: "Please enter your name.",
+        nameMax: "Maximum {max} characters.",
+        email: "Check the email address (or leave it empty).",
+        messageMin: "Tell us a little more (minimum {min} characters).",
+        messageMax: "Maximum {max} characters.",
+      },
+      whatsapp: {
+        greeting: "Hi, I'm {name}.",
+        greetingWithCompany: "Hi, I'm {name} from {company}.",
+        subject: "Subject: {topic}",
+        email: "Email: {email}",
+        footer: "(Sent from the SmartHub contact page)",
+      },
+    },
+  },
+};

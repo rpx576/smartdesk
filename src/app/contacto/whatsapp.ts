@@ -3,9 +3,14 @@
  * with the message already written, and WhatsApp (app or web) opens the chat
  * with SmartHub so the visitor only has to press send.
  */
+import { es } from "@/i18n/dictionaries/es";
+import { format, type Dictionary } from "@/i18n";
 export const WHATSAPP_NUMBER = "34655130513";
 export const WHATSAPP_DISPLAY = "+34 655 130 513";
 export const PHONE_HREF = "tel:+34655130513";
+
+/** Texts of the contact form in one language (Spanish unless told otherwise). */
+export type ContactCopy = Dictionary["contact"]["form"];
 
 export const CONTACT_TOPICS = ["SmartDesk", "SmartAI", "SmartWeb", "Otro"] as const;
 export type ContactTopic = (typeof CONTACT_TOPICS)[number];
@@ -27,36 +32,38 @@ export const MESSAGE_MAX = 1000;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Empty object when the form can be sent; otherwise one message per wrong field. */
-export function validateContact(input: ContactInput): ContactErrors {
+export function validateContact(input: ContactInput, copy: ContactCopy = es.contact.form): ContactErrors {
   const errors: ContactErrors = {};
   const name = input.name.trim();
   const email = input.email.trim();
   const message = input.message.trim();
 
-  if (!name) errors.name = "Escribe tu nombre.";
-  else if (name.length > NAME_MAX) errors.name = `Máximo ${NAME_MAX} caracteres.`;
+  if (!name) errors.name = copy.errors.name;
+  else if (name.length > NAME_MAX) errors.name = format(copy.errors.nameMax, { max: NAME_MAX });
 
-  if (email && !EMAIL.test(email)) errors.email = "Revisa el email (o déjalo vacío).";
+  if (email && !EMAIL.test(email)) errors.email = copy.errors.email;
 
-  if (message.length < MESSAGE_MIN) errors.message = `Cuéntanos un poco más (mínimo ${MESSAGE_MIN} caracteres).`;
-  else if (message.length > MESSAGE_MAX) errors.message = `Máximo ${MESSAGE_MAX} caracteres.`;
+  if (message.length < MESSAGE_MIN) errors.message = format(copy.errors.messageMin, { min: MESSAGE_MIN });
+  else if (message.length > MESSAGE_MAX) errors.message = format(copy.errors.messageMax, { max: MESSAGE_MAX });
 
   return errors;
 }
 
 /** Text that arrives on SmartHub's WhatsApp. Empty optional fields are left out. */
-export function buildContactMessage(input: ContactInput): string {
+export function buildContactMessage(input: ContactInput, copy: ContactCopy = es.contact.form): string {
   const name = input.name.trim();
   const company = input.company.trim();
   const email = input.email.trim();
   const lines = [
-    `Hola, soy ${name || "..."}${company ? ` de ${company}` : ""}.`,
-    `Asunto: ${input.topic}`,
+    company
+      ? format(copy.whatsapp.greetingWithCompany, { name: name || "...", company })
+      : format(copy.whatsapp.greeting, { name: name || "..." }),
+    format(copy.whatsapp.subject, { topic: copy.topics[input.topic] }),
     "",
     input.message.trim() || "...",
   ];
-  if (email) lines.push("", `Email: ${email}`);
-  lines.push("", "(Enviado desde la página de contacto de SmartHub)");
+  if (email) lines.push("", format(copy.whatsapp.email, { email }));
+  lines.push("", copy.whatsapp.footer);
   return lines.join("\n");
 }
 

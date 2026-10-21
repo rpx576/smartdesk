@@ -25,9 +25,9 @@ const ctaImage: Cover = { id: "photo-1449247709967-d4461a6a6103", alt: "", autho
 
 const sectionLinks = [
   { label: "Inicio", href: "/" },
-  { label: "Soluciones", href: "/#soluciones" },
+  { label: "Soluciones", href: "/soluciones" },
   { label: "SmartDesk", href: SMARTDESK_HREF },
-  { label: "Opiniones", href: "/#opiniones" },
+  { label: "Nuestra idea", href: "/#idea" },
   { label: "Contacto", href: "/contacto" },
 ];
 
