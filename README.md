@@ -55,6 +55,15 @@ Ver `.env.example`. Resumen:
 | `NEXT_PUBLIC_GA_ID` | Google Analytics 4, solo tras aceptar cookies (opcional; activa el banner) |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | Correo visible en la web (opcional) |
 
+## Vista previa en Netlify
+
+Cada pull request puede tener su propia vista previa (`deploy-preview-N--<sitio>.netlify.app`), construida con `netlify.toml`. Para que aparezca:
+
+- El sitio de Netlify debe estar enlazado al repositorio `rpx576/smartdesk` (Site configuration > Build & deploy > Continuous deployment > Repository).
+- En Deploy Previews debe estar elegido «Any pull request». Si solo se previsualizan los PR contra la rama de producción (`main`), los PR contra `develop` no tienen vista previa.
+
+Netlify solo construye cuando llega un commit nuevo: tras cambiar estos ajustes, hay que subir un commit al PR para obtener la vista previa.
+
 ## Seguridad
 
 - Cabeceras en `next.config.ts`: CSP, HSTS (producción), `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, COOP.
