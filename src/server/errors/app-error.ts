@@ -4,7 +4,9 @@ export type ErrorCode =
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "CONFLICT"
-  | "RATE_LIMITED";
+  | "RATE_LIMITED"
+  | "NOT_CONFIGURED"
+  | "DELIVERY_FAILED";
 
 /**
  * Expected, client-facing error. Its message is safe to return in a response;

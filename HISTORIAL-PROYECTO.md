@@ -242,3 +242,11 @@ Aviso: al cambiar de rama, los archivos sin commit viajan con el usuario; en una
 6. Decidir si el login y el registro adoptan el fondo azul y el estilo oscuro de la nueva home.
 7. Futuro del calendario (V1.5): arrastrar y soltar y redimensionar eventos.
 8. Pendientes de fases anteriores: limitar intentos de login, verificación de email, recuperación de contraseña, invitación de usuarios y el panel de actividad real (hoy es un estado vacío).
+
+---
+
+## 10. Reestructuración a Advanthor (noviembre de 2026)
+
+- La web pasa a ser **Advanthor, soluciones digitales avanzadas**: creación web, mantenimiento web, SEO y ciberseguridad.
+- Se retiran SmartDesk (SaaS, cuentas, Prisma, base de datos), SmartAI, SmartWeb, Soluciones y la versión en inglés. Su último estado queda en la rama `archivo/smartdesk-saas` y la etiqueta `smartdesk-final`.
+- Rama de trabajo: `feature/advanthor-servicios`. Detalle de lo hecho y lo pendiente en el informe final de la reestructuración.

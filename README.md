@@ -1,236 +1,62 @@
-# SmartDesk
+# Advanthor · web
 
-Plataforma SaaS multi-tenant de gestión para pequeñas empresas: clientes, proyectos, tareas, calendario, documentos, usuarios y roles.
+Web de **Advanthor, soluciones digitales avanzadas**: empresa de servicios de creación web, mantenimiento web, SEO y ciberseguridad para empresas, autónomos y negocios.
 
-> Estado: web pública de SmartHub (inicio, soluciones, blog y contacto), base arquitectónica, autenticación con Auth.js (registro de empresa, login y logout), dashboard de la aplicación y primer módulo (clientes: API, listado y ficha).
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Zod. Sin base de datos. Despliegue en Netlify.
 
-## Web pública de SmartHub
-
-Páginas sin sesión que comparten la cabecera de `src/app/_home/` (el menú se define en `navigation.ts`).
-
-| Ruta | Contenido |
-| --- | --- |
-| `/` | Inicio de SmartHub |
-| `/soluciones` | Servicios (SmartDesk, SmartAI, SmartWeb), buscador por necesidad y proceso de trabajo (`src/app/soluciones/`) |
-| `/smartai` | SmartAI Studio: 5 asistentes de IA (presupuestos, respuestas a clientes, resumen y tareas, redes, reseñas) que responden en streaming desde `POST /api/smartai`. Con `ANTHROPIC_API_KEY` usa Claude (`SMARTAI_MODEL`, por defecto `claude-opus-5-5`); sin clave funciona en modo demostración con plantillas. Límite de peticiones por IP en memoria (`src/server/services/smartai.service.ts`) |
-| `/blog` | Artículos sobre facturación, IA y webs para empresas, con filtros, búsqueda y guardados en el navegador (`src/app/blog/`) |
-| `/contacto` | Formulario que abre WhatsApp con el mensaje ya escrito (enlace `wa.me`, sin API de pago); el número está en `src/app/contacto/whatsapp.ts` |
-| `/login`, `/register`, `/cuenta` | Acceso con cuenta SmartHub, con el diseño compartido de `src/app/_access/` |
-| `/smartdesk/login`, `/smartdesk/empezar` | Acceso a SmartDesk y alta de empresa, con el mismo diseño |
-
-Para ver la web pública en local basta con `npm install` y `npm run dev` (http://localhost:3000). Las páginas de acceso y SmartDesk necesitan además la base de datos (ver «Puesta en marcha»).
-
-## Integración continua
-
-`.github/workflows/ci.yml` ejecuta `npm run typecheck`, `npm run lint` y `npm test` en cada pull request y en cada push a `main` y `develop`. Antes de abrir un PR conviene lanzar los tres en local.
-
-## Stack
-
-- Next.js 16 (App Router, Route Handlers), React 19, TypeScript
-- Tailwind CSS 4
-- PostgreSQL 17 + Prisma 7 (driver adapter `pg`)
-- Auth.js v5 (`next-auth@5`, beta) con credenciales y sesiones JWT
-- Zod para validación
-- Tests con el runner nativo de Node (`node:test`) + `tsx`
-- Docker Compose para la base de datos local
-
-## Requisitos
-
-- Node.js 24+ y npm
-- Docker Desktop con el motor en marcha (en Windows necesita la característica *Virtual Machine Platform* / WSL 2)
+> El antiguo SaaS SmartDesk y los productos SmartAI/SmartWeb se retiraron de esta web. Su último estado está en la rama `archivo/smartdesk-saas` y en la etiqueta `smartdesk-final`.
 
 ## Puesta en marcha
 
 ```bash
 npm install
-cp .env.example .env      # cambia POSTGRES_PASSWORD (también en DATABASE_URL), AUTH_SECRET y SEED_USER_PASSWORD
-npm run db:up             # PostgreSQL en localhost:5433
-npm run db:deploy         # aplica las migraciones
-npm run db:seed           # datos de ejemplo (dos organizaciones)
-npm run dev               # http://localhost:3000 (login en /login, alta de empresa en /register)
+npm run dev        # http://localhost:3000
 ```
 
-¿Sin Docker? `npx prisma dev` levanta un PostgreSQL local embebido; usa la URL `postgres://…` que imprime como `DATABASE_URL`.
+Antes de cada commit: `npm run lint`, `npm run typecheck`, `npm test` y `npm run build` (la CI de `.github/workflows/ci.yml` ejecuta los cuatro).
 
-## Scripts
-
-| Script | Descripción |
-| --- | --- |
-| `npm run dev` / `build` / `start` | Servidor de desarrollo, build y servidor de producción |
-| `npm run lint` / `typecheck` / `test` | ESLint, tipos de rutas + `tsc --noEmit`, tests unitarios |
-| `npm run db:up` / `db:down` | Arranca / para PostgreSQL (Docker Compose) |
-| `npm run db:migrate` | Crea y aplica una migración en desarrollo |
-| `npm run db:deploy` | Aplica las migraciones existentes |
-| `npm run db:seed` | Carga los datos de ejemplo |
-| `npm run db:studio` | Prisma Studio |
-
-## Arquitectura
-
-```
-Route Handler  →  Service  →  Repository  →  Prisma  →  PostgreSQL
-src/app/api       src/server/services   src/server/repositories
-```
-
-- **Route Handlers**: autentican, validan la entrada (Zod), llaman a un servicio y dan forma a la respuesta. Sin lógica de negocio.
-- **Services**: lógica de negocio y autorización. Reciben sus dependencias por inyección (`createXService`), lo que permite testearlos sin base de datos.
-- **Repositories**: única capa que usa Prisma. Devuelven tipos de dominio (`src/server/domain`), no tipos de Prisma.
-- ESLint (`no-restricted-imports`) impide importar Prisma fuera de los repositorios y repositorios desde `src/app`.
-
-```
-prisma/                 esquema, migraciones y seed
-src/app/                páginas, Server Actions y Route Handlers ((app)/ = aplicación autenticada)
-src/lib/                utilidades de presentación (formato de fechas, etiquetas)
-src/config/env.ts       variables de entorno validadas
-src/server/auth/        Auth.js, sesión, contraseñas y matriz de permisos
-src/server/domain/      tipos de dominio
-src/server/errors/      errores de aplicación
-src/server/http/        wrapper de rutas, parsing y respuestas de error
-src/server/repositories/
-src/server/services/
-src/server/validation/  esquemas Zod
-```
-
-### Multi-tenancy y permisos
-
-- Todo dato de negocio pertenece a una `Organization`. Un `User` accede a ella mediante una `Membership` con rol `ADMIN`, `EMPLOYEE` o `CLIENT`.
-- La organización va en la URL (`/api/organizations/{organizationId}/…`) y **siempre** se comprueba en backend: `tenantAccessService.authorize(user, organizationId, permiso)`.
-- Quien no es miembro recibe `404` (no se revela que la organización existe); quien es miembro sin permiso recibe `403`.
-- Los repositorios filtran todas las consultas por `organizationId`.
-- La matriz de permisos está en `src/server/auth/permissions.ts`.
-
-### Autenticación y autorización
-
-Están separadas:
-
-- **Autenticación** (quién eres): Auth.js v5 en `src/server/auth/auth.ts`, proveedor de credenciales (email + contraseña) y sesión JWT en cookie `httpOnly` (8 h). El token solo lleva el id del usuario. `src/server/auth/session.ts` es el único punto que resuelve el usuario actual y lo vuelve a leer de la base de datos en cada petición:
-  - `requireSessionUser()` en API y Server Actions (sin sesión: `401`);
-  - `requirePageUser()` en páginas (sin sesión: redirige a `/login`).
-- **Autorización** (qué puedes hacer): `tenantAccessService.authorize()` consulta la membresía y el rol en la organización en cada operación. Los roles no van en el token, así que un cambio de rol se aplica al instante.
-- Contraseñas con `scrypt` (módulo `crypto` de Node, sal aleatoria, comparación en tiempo constante). Con emails inexistentes también se calcula un hash, para no revelar por el tiempo de respuesta qué cuentas existen.
-- `/register` crea una organización nueva con su primer usuario como ADMIN e inicia sesión. Tras el login siempre se va a `/dashboard` (sin redirecciones controladas por el usuario).
-- Las páginas protegidas comprueban la sesión en el servidor (patrón *Data Access Layer* de Next 16); no se usa `proxy.ts`.
-
-Variables: `AUTH_SECRET` (obligatoria, mínimo 32 caracteres; se genera con `npx auth secret`). En producción detrás de un dominio o proxy hace falta `AUTH_URL` o `AUTH_TRUST_HOST=true`.
-
-Pendiente: limitar intentos de login (*rate limiting*), verificación de email, recuperación de contraseña e invitación de usuarios a una organización.
-
-## Frontend de la aplicación
-
-Las páginas autenticadas viven en el grupo de rutas `src/app/smartdesk/(app)/`, que comparte un layout con sidebar (en móvil, un menú lateral basado en `<dialog>`) y cabecera.
+## Páginas
 
 | Ruta | Contenido |
 | --- | --- |
-| `/dashboard` | Resumen con datos reales: clientes, proyectos activos, tareas pendientes (vencidas y completadas); documentos (próximamente), clientes recientes, «Tu agenda» (próximos eventos y vencimientos), cartera por estado y actividad (pendiente) |
-| `/clients` | Listado de clientes con búsqueda, paginación y acciones Ver / Editar / Eliminar |
-| `/clients/new` | Alta de cliente (ADMIN y EMPLOYEE) |
-| `/clients/{id}` | Ficha de un cliente, con Editar y (solo ADMIN) Eliminar |
-| `/clients/{id}/edit` | Edición de cliente (ADMIN y EMPLOYEE) |
-| `/projects` | Listado de proyectos con búsqueda (proyecto o cliente), filtros (estado, prioridad, cliente) y paginación |
-| `/projects/new` | Alta de proyecto (ADMIN y EMPLOYEE) |
-| `/projects/{id}` | Ficha del proyecto: resumen, progreso real, sección «Tareas» con «Crear tarea» y sección «Calendario» con próximos eventos (Documentos, Equipo y Actividad «Próximamente»), con Editar y (solo ADMIN) Eliminar |
-| `/projects/{id}/edit` | Edición de proyecto (ADMIN y EMPLOYEE) |
-| `/tasks` | Listado de tareas: búsqueda (tarea o proyecto), filtros (proyecto, responsable, estado, prioridad, rango de fecha límite), orden (recientes, fecha límite, prioridad) y paginación |
-| `/tasks/new` | Alta de tarea (ADMIN y EMPLOYEE); `?projectId=` preselecciona un proyecto propio |
-| `/tasks/{id}` | Ficha de la tarea con gestión rápida (estado, prioridad, responsable), Editar y (solo ADMIN) Eliminar |
-| `/tasks/{id}/edit` | Edición de tarea (ADMIN y EMPLOYEE) |
-| `/calendar` | Calendario: vistas mes, semana, día y agenda; navegación, filtros y búsqueda (ADMIN y EMPLOYEE) |
-| `/calendar/new` | Alta de evento; `?date=` y `?projectId=` preseleccionan valores propios |
-| `/calendar/{id}` | Ficha del evento con aviso de solapamiento, Editar y Eliminar (ADMIN siempre; EMPLOYEE si lo creó o lo tiene asignado) |
-| `/calendar/{id}/edit` | Edición de evento (mismas reglas) |
-| `/documents`, `/settings` | Página «Próximamente» |
+| `/` | Inicio: hero interactivo con el banner, servicios, problemas, diferenciadores, metodología, casos (ocultos hasta tener casos reales), FAQ y CTA |
+| `/creacion-web`, `/mantenimiento-web`, `/seo`, `/ciberseguridad` | Páginas de servicio con la plantilla común `src/components/service-page.tsx` |
+| `/sobre-nosotros` | Empresa, valores y método |
+| `/blog` | Noticias con fuentes, filtros y guardados en el navegador |
+| `/contacto` | Formulario de consulta y presupuesto (`?servicio=seo&tipo=presupuesto` lo rellena), WhatsApp, teléfono y reservas si se configuran |
+| `/gracias` | Confirmación tras enviar el formulario (noindex) |
+| `/aviso-legal`, `/politica-de-privacidad`, `/politica-de-cookies`, `/condiciones-de-contratacion` | Textos legales con marcadores `[PENDIENTE]` |
+| `/configuracion-cookies` | Preferencias de cookies (noindex) |
+| `POST /api/contacto` | Valida, filtra spam y envía los correos del formulario |
 
-- **Organización activa**: `getAppContext()` (`src/server/auth/organization-context.ts`) obtiene el usuario con Auth.js y elige una de **sus** organizaciones. La cookie `sd_active_org` solo guarda la preferencia (se cambia con el selector del sidebar cuando el usuario pertenece a varias); si apunta a una organización de la que no es miembro, se ignora. Además, cada consulta vuelve a pasar por `tenantAccessService.authorize()`.
-- Las páginas llaman a servicios (`dashboardService`, `clientService`, `projectService`, `taskService`, `calendarEventService`), nunca a repositorios. Un usuario con rol `CLIENT` ve el dashboard sin datos de clientes.
-- Estados de UI: `loading.tsx` (esqueletos), `error.tsx` en `(app)` y en la raíz (por ejemplo, base de datos caída), `not-found` para clientes inexistentes o de otra organización, y estados vacíos.
-- Componentes en `src/app/smartdesk/(app)/_components/`; formato de fechas y textos en `src/lib/format.ts` (`es-ES`, zona `Europe/Madrid`). Los colores son tokens CSS (`globals.css`) con modo oscuro.
+Las direcciones antiguas (`/smartweb`, `/smartai`, `/soluciones`, `/smartdesk/*`, `/login`, `/register`, `/cuenta`, `/en/*`, `/es/*`) redirigen con 301 (`next.config.ts`).
 
-### CRUD de clientes desde la interfaz
+## Dónde se edita el contenido
 
-- Crear, editar y eliminar usan **Server Actions** (`src/app/smartdesk/(app)/clients/actions.ts`), que siguen el mismo camino que la API: validan con los esquemas Zod de `src/server/validation/client.schema.ts` y llaman a `clientService`, que autoriza con `tenantAccessService.authorize()`. Ni las páginas ni las acciones tocan repositorios o Prisma.
-- La organización sale siempre de `getAppContext()` (servidor). Del formulario solo se leen los campos del cliente (`readClientForm`); un `organizationId` enviado por el navegador se descarta. El id del cliente que llega en la acción se trata como no fiable: se valida y el servicio lo busca dentro de la organización activa (otro tenant ⇒ «no encontrado»).
-- Permisos: ADMIN crea, edita y elimina; EMPLOYEE crea y edita; CLIENT no ve ni modifica clientes. La interfaz oculta lo que no se puede hacer, pero el servidor lo rechaza igualmente (probado llamando a las acciones directamente).
-- Formularios: validación en el servidor con mensajes en español, se conservan los valores tras un error, el foco va al primer campo inválido, botón desactivado mientras se guarda (sin dobles envíos). Los errores inesperados muestran un mensaje genérico y el detalle solo queda en el log del servidor.
-- Eliminar pide confirmación en un `<dialog>` (el foco empieza en «Cancelar») e indica que no se puede deshacer.
-- Tras crear, editar o eliminar se redirige con `?notice=created|updated|deleted`, que muestra un aviso de éxito y se quita de la URL. Las redirecciones del listado se construyen en el servidor a partir de búsqueda y página validadas (sin redirecciones abiertas).
+- `src/content/site.ts`: marca, WhatsApp, menús y enlaces.
+- `src/content/services.ts`: los cuatro servicios (textos, listas, beneficios, proceso, FAQ, SEO).
+- `src/content/plans.ts`: planes de mantenimiento, modalidades SEO y bloques de ciberseguridad. **Los precios están a `null`** («Precio a consultar») hasta que se fijen.
+- `src/content/home.ts`: textos de la home y `CASE_STUDIES` (vacío a propósito).
+- `src/content/company.ts`: datos del titular para las páginas legales (todo `null` hasta confirmarlo) y proveedores que tratan datos.
+- `public/brand/`: logo y banner. `src/app/icon.png`, `apple-icon.png`, `favicon.ico` y `opengraph-image.jpg` se generan a partir de ellos.
 
-### Proyectos
+## Variables de entorno
 
-- Modelo `Project` (`prisma/schema.prisma`): pertenece a una organización, a un cliente y a su creador (`createdBy`, que se muestra como responsable). Estado (`ProjectStatus`) y prioridad (`ProjectPriority`) son enums; fechas de inicio y fin como `DATE`; presupuesto e horas como `DECIMAL`. Está preparado para colgar de él tareas, eventos, documentos, equipo y actividad en fases posteriores.
-- **Aislamiento entre organizaciones en tres capas**: el servicio comprueba con el repositorio de clientes que el `clientId` recibido pertenece a la organización activa; todas las consultas del repositorio filtran por `organizationId`; y la base de datos usa una clave foránea compuesta `(client_id, organization_id)` → `clients(id, organization_id)`, de modo que PostgreSQL rechaza un proyecto apuntando a un cliente de otra organización aunque fallara el código.
-- Un cliente con proyectos no se puede eliminar (la base de datos lo impide y la interfaz lo explica); hay que eliminar o reasignar antes sus proyectos. Borrar una organización entera sí elimina sus proyectos.
-- Permisos `project:read`, `project:write` (ADMIN, EMPLOYEE) y `project:delete` (solo ADMIN) en `src/server/auth/permissions.ts`; CLIENT no tiene acceso al CRUD.
-- Mismo patrón que Clientes: Server Actions en `src/app/smartdesk/(app)/projects/actions.ts`, Route Handlers en `/api/organizations/{organizationId}/projects`, servicio `projectService` y repositorio `projectRepository` (único que usa Prisma).
-- El **progreso** se calcula en servidor a partir de las tareas: `COMPLETED / (todas las tareas − CANCELLED)`. Las canceladas son trabajo descartado y no cuentan ni como hechas ni como pendientes; TODO, IN_PROGRESS, IN_REVIEW y BLOCKED cuentan como pendientes. Sin tareas (o solo canceladas) = 0 %. El listado obtiene los recuentos de todos sus proyectos con una sola consulta agrupada (sin N+1).
-- Eliminar un proyecto elimina también sus tareas (el diálogo de confirmación lo advierte).
-- Importes y horas aceptan coma o punto decimal (máximo dos decimales, sin separador de miles).
+Ver `.env.example`. Resumen:
 
-### Tareas
-
-- Modelo `Task`: pertenece a una organización, a un proyecto, a un responsable (`assignee`) y a su creador (`createdBy`, tomado siempre de la sesión). Estado (`TaskStatus`: TODO, IN_PROGRESS, IN_REVIEW, BLOCKED, COMPLETED, CANCELLED) y prioridad (`TaskPriority`) son enums; fechas de inicio y límite como `DATE`; horas estimadas y reales como `DECIMAL(8,2)`. Preparado para comentarios, subtareas, adjuntos, control de tiempo y actividad en fases posteriores.
-- **Aislamiento en tres capas**, como en Proyectos: el servicio comprueba que el proyecto y el responsable pertenecen a la organización activa; el repositorio filtra todo por `organizationId`; y la base de datos tiene dos claves foráneas compuestas: `(project_id, organization_id)` → `projects(id, organization_id)` y `(assignee_id, organization_id)` → `memberships(user_id, organization_id)`. PostgreSQL rechaza así una tarea de un proyecto ajeno o asignada a alguien que no es miembro, aunque fallara el código.
-- **Responsable**: debe existir, ser miembro de la organización y tener un rol con `task:assignable` (ADMIN o EMPLOYEE; los usuarios CLIENT son externos y no pueden ser responsables). Un miembro con tareas asignadas no se puede eliminar de la organización hasta reasignarlas.
-- **`completedAt`** lo calcula el servicio: se fija al pasar a COMPLETED, se conserva mientras siga completada y se borra si vuelve a otro estado. Nunca se acepta del navegador.
-- **Fechas**: igual que en Proyectos (fechas de calendario a medianoche UTC, sin desfases). «Vencida» = tarea abierta con fecha límite anterior al día de hoy en `Europe/Madrid` (`src/lib/dates.ts`).
-- Permisos `task:read`, `task:write` (crear, editar, cambiar estado/prioridad, asignar; ADMIN y EMPLOYEE) y `task:delete` (solo ADMIN). CLIENT no tiene acceso. La interfaz usa `taskCapabilities(role)`.
-- Server Actions en `src/app/smartdesk/(app)/tasks/actions.ts`: `createTask`, `updateTask`, `changeTaskStatus`, `changeTaskPriority`, `assignTask` y `deleteTask`. Las tres de cambio rápido comparten el mismo camino que `updateTask` (validación, tenant, permisos y servicio).
-- **Dashboard**: «Tareas pendientes» (abiertas, con vencidas y completadas) y «Proyectos activos» muestran datos reales según los permisos del rol.
-
-### Calendario
-
-- Modelo `CalendarEvent` (`prisma/schema.prisma`, migración `20261008090000_add_calendar_events`): título, descripción, tipo (`CalendarEventType`: MEETING, REMINDER, DELIVERY, INTERNAL, OTHER), inicio y fin como instantes, `allDay`, ubicación, creador (de la sesión), responsable opcional y enlaces opcionales a cliente, proyecto y tarea. Índices por organización + inicio, responsable, proyecto, cliente y tarea. Preparado para recurrencia, invitados y sincronización en fases posteriores (no implementados).
-- **Las tareas no se copian**: el calendario lee `Task` directamente y combina eventos y tareas en memoria en un modelo de vista (`CalendarItem` en `src/server/domain/calendar-event.ts`). Una tarea con fecha de inicio y límite se muestra como intervalo; con solo fecha límite, como vencimiento; sin fecha límite no aparece. Las COMPLETED se ven tachadas y las CANCELLED se ocultan salvo que se filtre por ese estado. Clic en tarea → `/tasks/{id}`, en evento → `/calendar/{id}`.
-- **Zona horaria**: todo en `Europe/Madrid` con los helpers de `src/lib/dates.ts` (`zonedDateTime`, `zonedDay`, `startOfZonedDay`…). Los eventos se introducen como día + hora local; un evento «todo el día» va de la medianoche local de ese día a la del siguiente (23 o 25 horas en los cambios de hora). En V1 un evento empieza y termina el mismo día (máximo 25 h).
-- **Aislamiento en tres capas**: el servicio comprueba que responsable, cliente, proyecto y tarea son de la organización activa y coherentes entre sí (el proyecto es del cliente, la tarea es del proyecto; si falta el padre se rellena a partir del hijo); el repositorio filtra todo por `organizationId`; y la base de datos tiene claves foráneas compuestas `(x_id, organization_id)` hacia `memberships`, `clients`, `projects` y `tasks` (para la de tareas se añadió `@@unique([id, organizationId])` en `Task`), además de un `CHECK` fin > inicio.
-- Borrar un cliente, proyecto o tarea **no borra** sus eventos: se desvinculan en la misma transacción.
-- **Permisos**: `calendar:read` y `calendar:write` (ADMIN, EMPLOYEE), `calendar:manage` (solo ADMIN: editar/eliminar cualquier evento) y `calendar:assignable` (ADMIN, EMPLOYEE). EMPLOYEE solo edita o elimina los eventos que creó o que tiene asignados (`canModifyEvent`). CLIENT no tiene acceso en V1 (ni páginas ni API).
-- **Solapamientos**: al guardar, si el responsable tiene otro evento con hora que se solapa, el evento se guarda igualmente y se avisa («Este evento coincide con otro evento existente.»): en la ficha del evento y como `warnings` en la API. No cuentan las tareas, los eventos de todo el día ni los que solo se tocan (10–11 y 11–12).
-- **Vistas** (`/calendar?view=month|week|day|agenda&date=YYYY-MM-DD`): mes (semanas de lunes a domingo, «+N más»), semana (rejilla horaria con eventos colocados y en paralelo si se solapan; en móvil, lista por días), día y agenda (lista cronológica paginada, la más cómoda en móvil). Navegación Anterior / Hoy / Siguiente y etiqueta del periodo. Solo se consulta el periodo visible (una consulta de eventos y otra de tareas, como máximo 500 de cada; si hay más se avisa).
-- **Filtros y búsqueda** (en servidor, en la URL): Mostrar (todos / eventos / tareas), Mis elementos, Proyecto, Usuario, Tipo de evento y Estado de tarea; búsqueda por título y descripción, nombre de proyecto o de cliente.
-- Arrastrar y soltar / redimensionar: **pospuesto a V1.5** (no se añadió ninguna librería de calendario; las vistas son código propio sin dependencias nuevas).
-- Integraciones: sección «Calendario» en la ficha del proyecto (próximos eventos y «Nuevo evento» con el proyecto preseleccionado) y panel «Tu agenda» en el dashboard (tus próximos 5 eventos y tus tareas abiertas que vencen en los próximos 7 días).
-
-**Actividad reciente (pendiente).** No existe todavía un modelo de actividad, así que el panel solo muestra un estado vacío. Para hacerlo real falta: una tabla `ActivityEvent` (organización, autor, acción, entidad, metadatos, fecha) escrita por los servicios al crear o cambiar datos, y un método de repositorio/servicio que liste los últimos eventos de una organización.
-
-## API
-
-| Método | Ruta | Permiso |
-| --- | --- | --- |
-| GET | `/api/health` | público |
-| GET/POST | `/api/auth/*` | Auth.js (login, logout, sesión, CSRF) |
-| GET | `/api/organizations` | autenticado |
-| GET | `/api/organizations/{organizationId}/clients?search=&status=&page=&pageSize=` | `client:read` |
-| POST | `/api/organizations/{organizationId}/clients` | `client:write` |
-| GET | `/api/organizations/{organizationId}/clients/{clientId}` | `client:read` |
-| PATCH | `/api/organizations/{organizationId}/clients/{clientId}` | `client:write` |
-| DELETE | `/api/organizations/{organizationId}/clients/{clientId}` | `client:delete` (solo ADMIN); `409` si tiene proyectos |
-| GET | `/api/organizations/{organizationId}/projects?search=&status=&priority=&clientId=&page=&pageSize=` | `project:read` |
-| POST | `/api/organizations/{organizationId}/projects` | `project:write` |
-| GET | `/api/organizations/{organizationId}/projects/{projectId}` | `project:read` |
-| PATCH | `/api/organizations/{organizationId}/projects/{projectId}` | `project:write` |
-| DELETE | `/api/organizations/{organizationId}/projects/{projectId}` | `project:delete` (solo ADMIN); borra también sus tareas |
-| GET | `/api/organizations/{organizationId}/tasks?search=&status=&priority=&projectId=&assigneeId=&dueFrom=&dueTo=&sort=&page=&pageSize=` | `task:read` |
-| POST | `/api/organizations/{organizationId}/tasks` | `task:write` |
-| GET | `/api/organizations/{organizationId}/tasks/{taskId}` | `task:read` |
-| PATCH | `/api/organizations/{organizationId}/tasks/{taskId}` | `task:write` (también estado, prioridad o responsable por separado) |
-| DELETE | `/api/organizations/{organizationId}/tasks/{taskId}` | `task:delete` (solo ADMIN) |
-| GET | `/api/organizations/{organizationId}/calendar-events?from=YYYY-MM-DD&to=YYYY-MM-DD&mine=&projectId=&userId=&eventType=&search=` (`to` exclusivo, máximo 62 días) | `calendar:read` |
-| POST | `/api/organizations/{organizationId}/calendar-events` (`date`, `startTime`/`endTime` `HH:MM` en hora de Madrid o `allDay`) | `calendar:write`; `201` con `warnings` si se solapa |
-| GET | `/api/organizations/{organizationId}/calendar-events/{eventId}` | `calendar:read` |
-| PATCH | `/api/organizations/{organizationId}/calendar-events/{eventId}` | `calendar:write` + `calendar:manage` o creador/responsable |
-| DELETE | `/api/organizations/{organizationId}/calendar-events/{eventId}` | igual que PATCH |
-
-El `organizationId` de la URL solo selecciona la organización: el servicio comprueba en base de datos que quien llama es miembro de ella antes de tocar ningún dato (si no lo es, `404`).
-
-Errores: `{ "error": { "code", "message", "details?" } }` con `400`, `401`, `403`, `404`, `409` o `500` (sin detalles internos).
-
-Los endpoints usan la cookie de sesión de Auth.js: inicia sesión en `/login` y llama a la API desde el mismo navegador. Las rutas `/api/auth/*` las gestiona Auth.js.
-
-Usuarios del seed (contraseña: el valor de `SEED_USER_PASSWORD` de tu `.env`): `admin@acme.test` (ADMIN), `employee@acme.test` (EMPLOYEE) y `client@acme.test` (CLIENT) en Acme; `admin@globex.test` (ADMIN) en Globex. Ids de organización: Acme `018f0000-0000-7000-8000-000000000001`, Globex `…0002`. El seed incluye además 8 eventos de calendario en octubre de 2026 (6 de Acme, dos de ellos solapados a propósito, y 2 de Globex).
+| Variable | Para qué |
+| --- | --- |
+| `SITE_URL` | Dirección pública (canonical, sitemap). Netlify da `URL` por sí mismo |
+| `SITE_INDEXING=on` | Abre la web a buscadores. Sin ella todo es `noindex` (hace falta volver a desplegar) |
+| `GOOGLE_SITE_VERIFICATION` | Verificación de Search Console |
+| `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL` | Envío real de correos del formulario. Sin las tres, el formulario avisa y ofrece WhatsApp |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Antispam de Cloudflare (opcional) |
+| `NEXT_PUBLIC_BOOKING_URL` | Botón «Reservar una reunión» (opcional) |
+| `NEXT_PUBLIC_GA_ID` | Google Analytics 4, solo tras aceptar cookies (opcional; activa el banner) |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Correo visible en la web (opcional) |
 
 ## Seguridad
 
-- Los secretos viven en `.env` (ignorado por Git); `.env.example` solo contiene valores de ejemplo.
-- PostgreSQL de desarrollo solo escucha en `127.0.0.1`.
-- Entrada validada con esquemas estrictos: los campos desconocidos (p. ej. `organizationId` en el cuerpo) se rechazan.
-- Sesión en cookie `httpOnly` firmada y cifrada; Auth.js protege login y logout contra CSRF.
-- Los logs de login nunca incluyen contraseñas ni emails.
+- Cabeceras en `next.config.ts`: CSP, HSTS (producción), `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, COOP.
+- Formulario: validación Zod estricta en servidor, campo trampa, tiempo mínimo de rellenado, límite por IP (en memoria, por instancia), Turnstile opcional, HTML de los correos escapado, logs sin datos personales.
+- Ningún secreto en el código: todo por variables de entorno.

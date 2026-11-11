@@ -24,7 +24,7 @@ export function KeyDates() {
               <time dateTime={item.date} className="bl-date__day">
                 {formatShortDay(item.date)} <span>{item.date.slice(0, 4)}</span>
               </time>
-              <span className="bl-chip">{categoryOf(item.category).product}</span>
+              <span className="bl-chip">{categoryOf(item.category).service}</span>
             </div>
             <p className="bl-date__title">{item.title}</p>
             <p className="bl-date__detail">{item.detail}</p>

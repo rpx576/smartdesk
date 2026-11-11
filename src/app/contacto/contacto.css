@@ -1,6 +1,6 @@
 /*
- * Contact page: its own look (dark green "chat" atmosphere) apart from the
- * blue of the rest of SmartHub. Only slow transform/opacity animations; all
+ * Contact page: its own "conversation" atmosphere (aurora, dots and rising
+ * chat bubbles) in the brand blues. Only slow transform/opacity animations; all
  * of them stop for people who prefer reduced motion.
  */
 .ct-bg {
@@ -8,13 +8,13 @@
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  background: radial-gradient(120% 80% at 50% 0%, #062823 0%, #04141a 45%, #030b0d 100%);
+  background: radial-gradient(120% 80% at 50% 0%, #06163a 0%, #040b1f 45%, #020617 100%);
 }
 
 .ct-dots {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgb(110 231 183 / 0.12) 1px, transparent 1px);
+  background-image: radial-gradient(rgb(147 197 253 / 0.12) 1px, transparent 1px);
   background-size: 26px 26px;
   mask-image: radial-gradient(ellipse at 50% 30%, black 10%, transparent 70%);
 }
@@ -31,7 +31,7 @@
   left: 10%;
   width: 34rem;
   height: 34rem;
-  background: #10b981;
+  background: #2563eb;
   opacity: 0.28;
   animation: ct-drift 22s ease-in-out infinite;
 }
@@ -40,7 +40,7 @@
   right: -10rem;
   width: 30rem;
   height: 30rem;
-  background: #14b8a6;
+  background: #06b6d4;
   opacity: 0.2;
   animation: ct-drift 26s ease-in-out infinite reverse;
 }
@@ -60,9 +60,9 @@
   bottom: -6rem;
   width: 4.5rem;
   height: 3rem;
-  border: 1px solid rgb(110 231 183 / 0.25);
+  border: 1px solid rgb(147 197 253 / 0.25);
   border-radius: 1.25rem 1.25rem 1.25rem 0.3rem;
-  background: rgb(16 185 129 / 0.05);
+  background: rgb(37 99 235 / 0.05);
   animation: ct-rise-bubble 24s linear infinite;
 }
 .ct-float--1 { left: 6%; animation-delay: 0s; }
@@ -73,13 +73,13 @@
 .ct-float--6 { left: 36%; width: 2.6rem; height: 1.8rem; border-radius: 1rem 1rem 0.3rem 1rem; animation-delay: -21s; animation-duration: 26s; }
 
 .ct-gradient-text {
-  background: linear-gradient(90deg, #34d399, #2dd4bf);
+  background: linear-gradient(90deg, #60a5fa, #22d3ee);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.ct-pulse { box-shadow: 0 0 0 0 rgb(52 211 153 / 0.6); animation: ct-pulse 2s ease-out infinite; }
+.ct-pulse { box-shadow: 0 0 0 0 rgb(96 165 250 / 0.6); animation: ct-pulse 2s ease-out infinite; }
 
 /* Quick actions (WhatsApp / call). */
 .ct-action {
@@ -96,10 +96,10 @@
 }
 .ct-action:hover,
 .ct-action:focus-visible {
-  border-color: rgb(52 211 153 / 0.45);
-  background: rgb(16 185 129 / 0.08);
+  border-color: rgb(96 165 250 / 0.45);
+  background: rgb(37 99 235 / 0.08);
   transform: translateY(-2px);
-  box-shadow: 0 16px 40px -18px rgb(16 185 129 / 0.6);
+  box-shadow: 0 16px 40px -18px rgb(37 99 235 / 0.6);
 }
 .ct-action__icon {
   display: grid;
@@ -118,8 +118,8 @@
 /* Form card, inputs and topic chips. */
 .ct-card {
   position: relative;
-  border: 1px solid rgb(110 231 183 / 0.15);
-  background: linear-gradient(160deg, rgb(15 40 38 / 0.75), rgb(6 17 22 / 0.8));
+  border: 1px solid rgb(147 197 253 / 0.15);
+  background: linear-gradient(160deg, rgb(15 28 58 / 0.75), rgb(4 10 26 / 0.8));
   box-shadow: 0 30px 80px -30px rgb(0 0 0 / 0.8), inset 0 1px 0 rgb(255 255 255 / 0.06);
   backdrop-filter: blur(18px);
 }
@@ -130,7 +130,7 @@
   left: 15%;
   right: 15%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #34d399, transparent);
+  background: linear-gradient(90deg, transparent, #60a5fa, transparent);
 }
 
 .ct-input {
@@ -139,9 +139,9 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 .ct-input:focus-within {
-  border-color: rgb(52 211 153 / 0.7);
+  border-color: rgb(96 165 250 / 0.7);
   background: rgb(0 0 0 / 0.35);
-  box-shadow: 0 0 0 4px rgb(16 185 129 / 0.15);
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 0.15);
 }
 .ct-input--error,
 .ct-input--error:focus-within {
@@ -159,13 +159,13 @@
   color: rgb(203 213 225);
   transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
-.ct-chip:hover { border-color: rgb(52 211 153 / 0.4); color: #fff; }
+.ct-chip:hover { border-color: rgb(96 165 250 / 0.4); color: #fff; }
 .ct-chip:has(input:checked) {
-  border-color: #34d399;
-  background: rgb(16 185 129 / 0.18);
-  color: #ecfdf5;
+  border-color: #60a5fa;
+  background: rgb(37 99 235 / 0.18);
+  color: #eff6ff;
 }
-.ct-chip:has(input:focus-visible) { box-shadow: 0 0 0 3px rgb(52 211 153 / 0.5); }
+.ct-chip:has(input:focus-visible) { box-shadow: 0 0 0 3px rgb(96 165 250 / 0.5); }
 
 .ct-btn {
   display: inline-flex;
@@ -173,44 +173,17 @@
   justify-content: center;
   gap: 0.5rem;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #10b981, #0d9488);
+  background: linear-gradient(135deg, #2563eb, #0891b2);
   padding: 0.8rem 1.6rem;
   font-size: 0.95rem;
   font-weight: 600;
   color: #fff;
   outline: none;
-  box-shadow: 0 12px 30px -10px rgb(16 185 129 / 0.7);
+  box-shadow: 0 12px 30px -10px rgb(37 99 235 / 0.7);
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
-.ct-btn:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 16px 36px -10px rgb(16 185 129 / 0.85); }
-.ct-btn:focus-visible { box-shadow: 0 0 0 3px #030b0d, 0 0 0 5px #34d399; }
-
-/* Phone with the live preview of the message. */
-.ct-phone {
-  border: 1px solid rgb(255 255 255 / 0.12);
-  border-radius: 2.4rem;
-  background: #0a0f12;
-  padding: 0.6rem;
-  box-shadow: 0 40px 90px -30px rgb(16 185 129 / 0.45), inset 0 0 0 1px rgb(255 255 255 / 0.04);
-}
-.ct-phone__screen {
-  overflow: hidden;
-  border-radius: 1.9rem;
-  background: #071a17;
-}
-.ct-chat {
-  background-color: #071a17;
-  background-image:
-    radial-gradient(rgb(110 231 183 / 0.07) 1px, transparent 1px),
-    radial-gradient(rgb(110 231 183 / 0.05) 1px, transparent 1px);
-  background-position: 0 0, 11px 11px;
-  background-size: 22px 22px;
-}
-.ct-bubble {
-  background: #0f5c4d;
-  box-shadow: 0 1px 0 rgb(0 0 0 / 0.3);
-  animation: ct-pop 0.35s ease-out;
-}
+.ct-btn:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 16px 36px -10px rgb(37 99 235 / 0.85); }
+.ct-btn:focus-visible { box-shadow: 0 0 0 3px #020617, 0 0 0 5px #60a5fa; }
 
 /* Entrance of the page sections. */
 .ct-rise { animation: ct-fade-up 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
@@ -228,12 +201,8 @@
   100% { transform: translateY(-115vh); opacity: 0; }
 }
 @keyframes ct-pulse {
-  0% { box-shadow: 0 0 0 0 rgb(52 211 153 / 0.6); }
-  100% { box-shadow: 0 0 0 8px rgb(52 211 153 / 0); }
-}
-@keyframes ct-pop {
-  from { opacity: 0; transform: translateY(6px) scale(0.98); }
-  to { opacity: 1; transform: none; }
+  0% { box-shadow: 0 0 0 0 rgb(96 165 250 / 0.6); }
+  100% { box-shadow: 0 0 0 8px rgb(96 165 250 / 0); }
 }
 @keyframes ct-fade-up {
   from { opacity: 0; transform: translateY(20px); }
@@ -241,8 +210,23 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ct-aurora, .ct-float, .ct-pulse, .ct-bubble, .ct-rise { animation: none; }
+  .ct-aurora, .ct-float, .ct-pulse, .ct-rise { animation: none; }
   .ct-float { display: none; }
-  .ct-action, .ct-btn, .ct-input, .ct-chip { transition: none; }
+  .ct-action, .ct-btn, .ct-input, .ct-chip, .ct-toggle { transition: none; }
   .ct-action:hover, .ct-btn:hover { transform: none; }
 }
+
+/* Two-option switch (consulta / presupuesto). */
+.ct-toggle {
+  cursor: pointer;
+  border-radius: 9999px;
+  padding: 0.55rem 0.75rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgb(148 163 184);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.ct-toggle:has(input:checked) { background: #2563eb; color: #fff; box-shadow: 0 8px 20px -8px rgb(37 99 235 / 0.8); }
+.ct-toggle:has(input:focus-visible) { box-shadow: 0 0 0 3px rgb(96 165 250 / 0.6); }
+.ct-btn:disabled { cursor: not-allowed; opacity: 0.6; transform: none; }

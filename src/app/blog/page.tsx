@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SMARTDESK_HREF } from "../_home/navigation";
-import { SiteHeader } from "../_home/site-header";
+import { quoteHref } from "@/content/site";
+import { pageMetadata } from "@/lib/seo";
 import { ARTICLES, CATEGORIES, KEY_DATES, categoryOf, type CoverImage as Cover } from "./articles";
 import { BlogExplorer } from "./blog-explorer";
 import { CoverImage } from "./cover-image";
@@ -9,11 +9,12 @@ import { KeyDates } from "./key-dates";
 import { formatDay } from "./query";
 import "./blog.css";
 
-export const metadata: Metadata = {
-  title: "Blog · SmartHub",
+export const metadata: Metadata = pageMetadata({
+  title: "Blog de Advanthor: web, SEO, ciberseguridad y normativa",
   description:
-    "Noticias con fuentes sobre facturación electrónica, Verifactu, inteligencia artificial para empresas, webs y ciberseguridad, explicadas para pequeñas empresas.",
-};
+    "Noticias con fuentes sobre webs y buscadores, ciberseguridad, inteligencia artificial y normativa para empresas, explicadas para pequeños negocios.",
+  path: "/blog",
+});
 
 const latest = [...ARTICLES].sort((a, b) => b.date.localeCompare(a.date));
 const lastUpdate = latest[0].date;
@@ -23,51 +24,23 @@ const mosaic = ["facturacion", "ia", "seguridad", "web"].flatMap((id) => latest.
 
 const ctaImage: Cover = { id: "photo-1449247709967-d4461a6a6103", alt: "", author: "Bench Accounting" };
 
-const sectionLinks = [
-  { label: "Inicio", href: "/" },
-  { label: "Soluciones", href: "/soluciones" },
-  { label: "SmartDesk", href: SMARTDESK_HREF },
-  { label: "Nuestra idea", href: "/#idea" },
-  { label: "Contacto", href: "/contacto" },
-];
-
-function SectionLinks() {
-  return (
-    <ul className="bl-links">
-      {sectionLinks.map((link) => (
-        <li key={link.href}>
-          <Link href={link.href}>{link.label}</Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/** SmartHub blog: light, minimal and photo-led, apart from the dark pages of the site. */
+/** Advanthor blog: light, minimal and photo-led, apart from the dark pages of the site. */
 export default function BlogPage() {
   return (
-    <div className="bl-page relative isolate flex min-h-dvh flex-1 flex-col font-sans">
-      <SiteHeader />
-
+    <div className="bl-page relative isolate flex flex-1 flex-col font-sans">
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-24 pt-8 sm:px-6 lg:px-8">
-        <nav aria-label="Secciones de SmartHub" className="bl-crumbs">
-          <Link href="/" className="bl-back">
-            <span aria-hidden="true">←</span> Volver al inicio
-          </Link>
-          <SectionLinks />
-        </nav>
 
         <header className="bl-hero">
           <div className="bl-hero__copy bl-in">
             <p className="bl-eyebrow">
-              <span className="bl-live" aria-hidden="true" /> Blog de SmartHub · actualizado el {formatDay(lastUpdate)}
+              <span className="bl-live" aria-hidden="true" /> Blog de Advanthor · actualizado el {formatDay(lastUpdate)}
             </p>
             <h1 className="bl-hero__title">
               Noticias que <span className="bl-hero__accent">mueven</span> tu negocio.
             </h1>
             <p className="bl-hero__lead">
-              Facturación, inteligencia artificial, webs y seguridad, explicadas en claro para pequeñas empresas. Cada
-              noticia enlaza a sus fuentes originales.
+              Webs, buscadores, seguridad, inteligencia artificial y normativa, explicadas en claro para pequeñas
+              empresas. Cada noticia enlaza a sus fuentes originales.
             </p>
             <dl className="bl-stats">
               <div>
@@ -133,17 +106,17 @@ export default function BlogPage() {
 
         <section aria-labelledby="cta-title" className="bl-cta">
           <div className="bl-cta__copy">
-            <p className="bl-eyebrow bl-eyebrow--light">SmartDesk · SmartAI · SmartWeb</p>
+            <p className="bl-eyebrow bl-eyebrow--light">Creación web · Mantenimiento · SEO · Ciberseguridad</p>
             <h2 id="cta-title" className="bl-cta__title">
               ¿Te afecta alguna de estas noticias?
             </h2>
             <p className="bl-cta__text">
-              Te ayudamos a prepararte: gestión y facturación con SmartDesk, automatización con SmartAI y webs
-              accesibles con SmartWeb.
+              Te ayudamos a adaptar tu web: accesibilidad, SEO, seguridad y mantenimiento, con una propuesta clara
+              antes de empezar.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href={SMARTDESK_HREF} className="bl-button bl-button--light">
-                Probar SmartDesk
+              <Link href={quoteHref()} className="bl-button bl-button--light">
+                Pedir presupuesto
               </Link>
               <Link href="/contacto" className="bl-button bl-button--outline">
                 Hablar con nosotros
@@ -156,16 +129,9 @@ export default function BlogPage() {
         </section>
 
         <p className="bl-note">
-          Los resúmenes los redacta SmartHub a partir de las fuentes enlazadas y no sustituyen el asesoramiento fiscal o
+          Los resúmenes los redacta Advanthor a partir de las fuentes enlazadas y no sustituyen el asesoramiento fiscal o
           legal. Fotos de Unsplash.
         </p>
-
-        <footer className="bl-footer">
-          <Link href="/" className="bl-back">
-            <span aria-hidden="true">←</span> Volver al inicio
-          </Link>
-          <SectionLinks />
-        </footer>
       </main>
     </div>
   );

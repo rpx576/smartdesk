@@ -1,18 +1,19 @@
 /**
- * Blog content: real news summarised by SmartHub, each with links to its
+ * Blog content: real news summarised by Advanthor, each with links to its
  * original sources. Dates are publication days (YYYY-MM-DD, read as UTC).
  * Keep summaries factual and say when something is announced but not approved.
  */
 export type CategoryId = "facturacion" | "ia" | "web" | "seguridad" | "datos";
 
-export type Category = { id: CategoryId; label: string; product: string; blurb: string };
+/** `service` is the Advanthor service each topic relates to, shown as a chip. */
+export type Category = { id: CategoryId; label: string; service: string; blurb: string };
 
 export const CATEGORIES: Category[] = [
-  { id: "facturacion", label: "Facturación y normativa", product: "SmartDesk", blurb: "Verifactu, factura electrónica y obligaciones" },
-  { id: "ia", label: "IA para empresas", product: "SmartAI", blurb: "Agentes, automatización y regulación de la IA" },
-  { id: "web", label: "Web y buscadores", product: "SmartWeb", blurb: "Accesibilidad, SEO y presencia online" },
-  { id: "seguridad", label: "Ciberseguridad", product: "Todas", blurb: "Fraudes, ataques y cómo protegerse" },
-  { id: "datos", label: "Datos y tendencias", product: "Todas", blurb: "Cifras sobre la digitalización de las empresas" },
+  { id: "facturacion", label: "Facturación y normativa", service: "Información general", blurb: "Verifactu, factura electrónica y obligaciones" },
+  { id: "ia", label: "IA para empresas", service: "Creación web", blurb: "Agentes, automatización y regulación de la IA" },
+  { id: "web", label: "Web y buscadores", service: "Creación web y SEO", blurb: "Accesibilidad, SEO y presencia online" },
+  { id: "seguridad", label: "Ciberseguridad", service: "Ciberseguridad", blurb: "Fraudes, ataques y cómo protegerse" },
+  { id: "datos", label: "Datos y tendencias", service: "Información general", blurb: "Cifras sobre la digitalización de las empresas" },
 ];
 
 export type Source = { name: string; url: string };

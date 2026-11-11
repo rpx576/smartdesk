@@ -1,45 +1,17 @@
 import { z } from "zod";
 
-const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-  // Read by Auth.js itself; validated here so a missing secret fails fast.
-  AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
-});
-
-export type Env = {
-  nodeEnv: "development" | "test" | "production";
-  databaseUrl: string;
-};
-
-let cached: Env | undefined;
-
-/**
- * Validated environment. Read lazily so that importing a module during
- * `next build` does not require runtime secrets.
+/*
+ * Server-side settings, read lazily (never at import time) so that `next build`
+ * works without secrets and a value added to the environment is picked up
+ * without code changes. Browser settings use NEXT_PUBLIC_* variables, which
+ * Next.js inlines at build time; they are read in `publicConfig` below.
  */
-export function getEnv(): Env {
-  if (cached) return cached;
-
-  const parsed = envSchema.safeParse(process.env);
-  if (!parsed.success) {
-    const problems = parsed.error.issues
-      .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-      .join("; ");
-    throw new Error(`Invalid environment configuration: ${problems}`);
-  }
-
-  cached = { nodeEnv: parsed.data.NODE_ENV, databaseUrl: parsed.data.DATABASE_URL };
-  return cached;
-}
 
 export type SiteConfig = {
-  /** Public address of the website, without a trailing slash (e.g. https://smarthub.es). */
+  /** Public address of the website, without a trailing slash (e.g. https://advanthor.es). */
   url: string;
   /** Search engines may index the site only when SITE_INDEXING=on (provisional sites stay private). */
   indexing: boolean;
-  /** Showcase mode: only the public pages; accounts and SmartDesk are redirected (no database). */
-  showcase: boolean;
   /** Google Search Console "HTML tag" verification code, if any. */
   googleVerification: string | null;
 };
@@ -48,45 +20,63 @@ const siteSchema = z.object({
   SITE_URL: z.string().trim().optional(),
   URL: z.string().trim().optional(), // set by Netlify to the main address of the site
   SITE_INDEXING: z.string().trim().optional(),
-  SHOWCASE_MODE: z.string().trim().optional(),
   GOOGLE_SITE_VERIFICATION: z.string().trim().optional(),
 });
 
-/**
- * Website settings (indexing, address, showcase mode). Separate from
- * `getEnv()` so the public pages work without the database and auth
- * variables. Safe by default: not indexable until SITE_INDEXING=on.
- */
+/** Website settings. Safe by default: not indexable until SITE_INDEXING=on. */
 export function getSiteConfig(): SiteConfig {
   const parsed = siteSchema.parse(process.env);
   return {
     url: (parsed.SITE_URL || parsed.URL || "http://localhost:3000").replace(/\/+$/, ""),
     indexing: parsed.SITE_INDEXING === "on",
-    showcase: parsed.SHOWCASE_MODE === "1",
     googleVerification: parsed.GOOGLE_SITE_VERIFICATION || null,
   };
 }
 
-export type SmartAiConfig = {
-  /** Anthropic API key. Without it SmartAI runs in demo mode (template answers). */
-  apiKey: string | null;
-  model: string;
+export type ContactConfig = {
+  /** API key of Resend (transactional email). Without it the form says email is not available yet. */
+  resendApiKey: string | null;
+  /** Inbox that receives the requests. */
+  to: string | null;
+  /** Sender, on a domain verified in Resend, e.g. "Advanthor <web@advanthor.es>". */
+  from: string | null;
+  /** Cloudflare Turnstile secret. When set, every submission must carry a valid token. */
+  turnstileSecret: string | null;
 };
 
-const smartAiSchema = z.object({
-  ANTHROPIC_API_KEY: z.string().trim().optional(),
-  SMARTAI_MODEL: z.string().trim().optional(),
+const contactSchema = z.object({
+  RESEND_API_KEY: z.string().trim().optional(),
+  CONTACT_TO_EMAIL: z.string().trim().optional(),
+  CONTACT_FROM_EMAIL: z.string().trim().optional(),
+  TURNSTILE_SECRET_KEY: z.string().trim().optional(),
 });
 
-/**
- * SmartAI settings. Separate from `getEnv()` so the public SmartAI page and
- * API work without the database and auth variables, and read on every call
- * so a key added to the environment is picked up without code changes.
- */
-export function getSmartAiConfig(): SmartAiConfig {
-  const parsed = smartAiSchema.parse(process.env);
+export function getContactConfig(): ContactConfig {
+  const parsed = contactSchema.parse(process.env);
   return {
-    apiKey: parsed.ANTHROPIC_API_KEY || null,
-    model: parsed.SMARTAI_MODEL || "claude-opus-5-5",
+    resendApiKey: parsed.RESEND_API_KEY || null,
+    to: parsed.CONTACT_TO_EMAIL || null,
+    from: parsed.CONTACT_FROM_EMAIL || null,
+    turnstileSecret: parsed.TURNSTILE_SECRET_KEY || null,
   };
 }
+
+/** True when the form can really send email. */
+export function isEmailConfigured(config: ContactConfig = getContactConfig()): boolean {
+  return Boolean(config.resendApiKey && config.to && config.from);
+}
+
+/**
+ * Settings visible to the browser. Each value must be written as
+ * `process.env.NEXT_PUBLIC_X` literally so Next.js can inline it.
+ */
+export const publicConfig = {
+  /** Cloudflare Turnstile site key (anti-spam widget on the contact form). */
+  turnstileSiteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || null,
+  /** Public booking link (Cal.com, Calendly, Google Calendar...). Without it, no booking button is shown. */
+  bookingUrl: process.env.NEXT_PUBLIC_BOOKING_URL || null,
+  /** Google Analytics 4 measurement id. Loaded only after the visitor accepts analytics cookies. */
+  gaId: process.env.NEXT_PUBLIC_GA_ID || null,
+  /** Public contact email shown on the site. */
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || null,
+};

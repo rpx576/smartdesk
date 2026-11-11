@@ -1,6 +1,6 @@
 /*
  * Blog: light, minimal and photo-led, apart from the dark pages of the rest
- * of SmartHub. Each topic has its own colour (`bl-tone--*`, read through
+ * of the site. Each topic has its own colour (`bl-tone--*`, read through
  * `--tone`). Animations are short and stop for people who prefer reduced motion.
  */
 .bl-page {
