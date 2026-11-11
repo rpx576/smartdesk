@@ -282,57 +282,78 @@ body {
 .sh-faq summary::-webkit-details-marker { display: none; }
 
 /*
- * Home hero: the Advanthor banner as an interactive stage. It tilts towards
- * the pointer (--rx/--ry), a light follows the cursor (--mx/--my) and the four
- * service words are real links placed over the picture. Static for touch
- * screens and for people who prefer reduced motion.
+ * Home hero: full-width stage. The banner melts into the background at its
+ * sides, a WebGL planet (src/components/planet.ts) covers the planet painted
+ * in the picture and the hero text sits over the planet. --px/--py (pointer
+ * position, -0.5..0.5) move the banner a little for depth.
  */
-.sh-stage {
-  --rx: 0deg;
-  --ry: 0deg;
-  --mx: 50%;
-  --my: 30%;
-  perspective: 1400px;
-}
-.sh-stage__card {
+.sh-hero {
+  --bw: min(100vw, 1680px, calc((100svh - 4rem) * 1.7768));
   position: relative;
-  aspect-ratio: 1672 / 941;
+  isolation: isolate;
   overflow: hidden;
-  border-radius: 1.75rem;
-  border: 1px solid rgb(96 165 250 / 0.25);
-  background: #01040d;
-  box-shadow: 0 40px 120px -40px rgb(37 99 235 / 0.55), 0 0 0 1px rgb(255 255 255 / 0.03) inset;
-  transform: rotateX(var(--rx)) rotateY(var(--ry));
-  transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.6s ease;
+  background: radial-gradient(120% 70% at 50% 0%, #04112e 0%, #01030c 60%), #01030c;
+  touch-action: pan-y;
 }
-.sh-stage[data-active="true"] .sh-stage__card { transition: transform 0.12s linear, box-shadow 0.6s ease; }
-.sh-stage__image {
+.sh-hero::after {
+  content: "";
   position: absolute;
-  inset: -3%;
-  width: 106%;
-  height: 106%;
-  object-fit: cover;
-  transform: translate3d(calc(var(--ry) * -2.2), calc(var(--rx) * 2.2), 0);
-  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  inset: auto 0 0;
+  z-index: 2;
+  height: 38%;
+  pointer-events: none;
+  /* Ends in the colour of the next (raised) section so there is no visible seam. */
+  background: linear-gradient(to bottom, rgb(7 13 31 / 0), rgb(7 13 31 / 0.8) 60%, #070d1f);
 }
-.sh-stage[data-active="true"] .sh-stage__image { transition: transform 0.12s linear; }
-.sh-stage__glare {
+.sh-hero__banner {
+  position: relative;
+  width: min(100%, var(--bw));
+  margin-inline: auto;
+  aspect-ratio: 1672 / 941;
+  user-select: none;
+}
+.sh-hero__image {
   position: absolute;
   inset: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at var(--mx) var(--my), rgb(125 211 252 / 0.22), transparent 38%);
-  mix-blend-mode: screen;
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  width: 100%;
+  height: 100%;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent);
+  transform: translate3d(calc(var(--px, 0) * -14px), calc(var(--py, 0) * -8px), 0);
+  transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  -webkit-user-drag: none;
 }
-.sh-stage[data-active="true"] .sh-stage__glare { opacity: 1; }
-/* Pulse ring over the emblem of the banner. */
-.sh-stage__ring {
+.sh-hero__planet {
   position: absolute;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+.sh-hero[data-planet="on"] .sh-hero__planet { opacity: 1; }
+.sh-hero__content {
+  position: relative;
+  z-index: 3;
+  margin-top: calc(var(--bw) * -0.085);
+}
+/* Soft dark backdrop so the text stays readable over the city lights. */
+.sh-hero__content::before {
+  content: "";
+  position: absolute;
+  inset: -10% 5% 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(50% 60% at 50% 45%, rgb(1 3 12 / 0.7), transparent);
+}
+/* Pulse ring over the emblem of the banner. */
+.sh-hero__ring {
+  position: absolute;
+  z-index: 2;
   left: 50%;
-  top: 27.2%;
-  width: 20.3%;
+  top: 28.7%;
+  width: 19%;
   aspect-ratio: 1;
   translate: -50% -50%;
   border-radius: 9999px;
@@ -346,8 +367,9 @@ body {
 /* A service word of the banner, made clickable. */
 .sh-hotspot {
   position: absolute;
-  top: 67%;
-  height: 9.5%;
+  z-index: 2;
+  top: 66.5%;
+  height: 7.5%;
   border-radius: 9999px;
   outline: none;
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
@@ -376,9 +398,19 @@ body {
 }
 .sh-hotspot:hover .sh-hotspot__tip,
 .sh-hotspot:focus-visible .sh-hotspot__tip { opacity: 1; translate: -50% 0; }
+/* Phones: the banner is drawn wider than the screen so its words stay readable. */
+@media (max-width: 640px) {
+  .sh-hero { --bw: 124vw; }
+  .sh-hero__banner { width: var(--bw); margin-left: calc((100% - var(--bw)) / 2); }
+  .sh-hero__image {
+    -webkit-mask-image: linear-gradient(to right, transparent 2%, #000 9%, #000 91%, transparent 98%);
+    mask-image: linear-gradient(to right, transparent 2%, #000 9%, #000 91%, transparent 98%);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  .sh-stage__card, .sh-stage__image { transform: none; transition: none; }
-  .sh-stage__ring { animation: none; }
+  .sh-hero__image { transform: none; transition: none; }
+  .sh-hero__planet { transition: none; }
+  .sh-hero__ring { animation: none; }
   html { scroll-behavior: auto; }
 }
 

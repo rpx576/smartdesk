@@ -22,21 +22,15 @@ export default function Home() {
       <RevealOnScroll />
       <JsonLd data={faqJsonLd(HOME.faq)} />
 
-      {/* 1. Hero: the interactive banner and the value proposition. */}
-      <section aria-labelledby="hero-title" className="relative isolate pb-16 pt-8 sm:pb-24 sm:pt-12">
-        <div aria-hidden="true" className="sh-stars pointer-events-none absolute inset-0 -z-10" />
-        <span aria-hidden="true" className="sh-blob pointer-events-none absolute -left-40 -top-40 -z-10 size-[34rem] rounded-full bg-blue-700/25 blur-3xl" />
-        <span aria-hidden="true" className="sh-blob pointer-events-none absolute -right-40 top-40 -z-10 size-[30rem] rounded-full bg-cyan-500/10 blur-3xl [animation-delay:-7s]" />
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="mx-auto w-full max-w-6xl" style={{ width: "min(100%, calc(56svh * 1672 / 941))" }}>
-            <HeroStage />
-          </div>
-          <div className="mx-auto mt-10 max-w-4xl text-center sm:mt-12">
-            <h1 id="hero-title" className="sh-enter sh-delay-1 text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+      {/* 1. Hero: full-width banner with the rotating planet and the value proposition. */}
+      <section aria-labelledby="hero-title">
+        <HeroStage>
+          <div className="mx-auto max-w-4xl px-4 pb-20 text-center sm:px-6 sm:pb-28">
+            <h1 id="hero-title" className="sh-enter sh-delay-1 text-4xl font-bold leading-tight tracking-tight text-white [text-shadow:0_2px_24px_rgb(1_3_12/0.9)] sm:text-5xl lg:text-6xl">
               {BRAND.headline.split(" ").slice(0, -1).join(" ")}{" "}
               <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">{BRAND.headline.split(" ").at(-1)}</span>
             </h1>
-            <p className="sh-enter sh-delay-2 mx-auto mt-5 max-w-2xl text-lg text-slate-300 sm:text-xl">
+            <p className="sh-enter sh-delay-2 mx-auto mt-5 max-w-2xl text-lg text-slate-200 [text-shadow:0_1px_12px_rgb(1_3_12/0.9)] sm:text-xl">
               {BRAND.subheadline} Creación web, mantenimiento, SEO y ciberseguridad para empresas, autónomos y negocios.
             </p>
             <div className="sh-enter sh-delay-3 mt-8 flex flex-wrap justify-center gap-3 max-sm:[&>*]:flex-1">
@@ -53,7 +47,7 @@ export default function Home() {
               </a>
             </div>
           </div>
-        </div>
+        </HeroStage>
       </section>
 
       {/* 2. Presentation */}
