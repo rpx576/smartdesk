@@ -16,8 +16,8 @@ const HOTSPOTS = [
 
 /**
  * Full-width home hero. The Advanthor banner blends into the background, and a
- * real 3D planet (WebGL) replaces the one drawn in the picture: it turns slowly,
- * follows the pointer and can be spun by dragging. Without WebGL, or before the
+ * real 3D planet (WebGL) replaces the one drawn in the picture: it turns slowly on
+ * its own, with glowing city lights and drifting clouds. Without WebGL, or before the
  * planet is ready, the planet of the picture is shown instead. With reduced
  * motion the planet is drawn once and stays still. The service words of the
  * banner are real links, so keyboard and screen reader users reach the same pages.

@@ -284,8 +284,7 @@ body {
 /*
  * Home hero: full-width stage. The banner melts into the background at its
  * sides, a WebGL planet (src/components/planet.ts) covers the planet painted
- * in the picture and the hero text sits over the planet. --px/--py (pointer
- * position, -0.5..0.5) move the banner a little for depth.
+ * in the picture and the hero text sits over the planet.
  */
 .sh-hero {
   --bw: min(100vw, 1680px, calc((100svh - 4rem) * 1.7768));
@@ -293,7 +292,6 @@ body {
   isolation: isolate;
   overflow: hidden;
   background: radial-gradient(120% 70% at 50% 0%, #04112e 0%, #01030c 60%), #01030c;
-  touch-action: pan-y;
 }
 .sh-hero::after {
   content: "";
@@ -319,8 +317,6 @@ body {
   height: 100%;
   -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent);
   mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent);
-  transform: translate3d(calc(var(--px, 0) * -14px), calc(var(--py, 0) * -8px), 0);
-  transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
   -webkit-user-drag: none;
 }
 .sh-hero__planet {
