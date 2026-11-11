@@ -44,5 +44,6 @@ describe("legal data", () => {
   it("marks missing owner data as pending", () => {
     assert.equal(pending(null, "NIF"), "[PENDIENTE: NIF]");
     assert.equal(hasPendingLegalData(), true);
+    assert.equal(hasPendingLegalData({ legalName: "a", taxId: "b", address: "c", email: "d", phone: "e", registry: false, lastReview: "2026-11-11" }), false);
   });
 });

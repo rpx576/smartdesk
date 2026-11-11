@@ -13,9 +13,6 @@ export const metadata: Metadata = pageMetadata({
   path: "/politica-de-cookies",
 });
 
-/** Date of the last change to this policy or to the cookies the site uses. */
-const UPDATED = "11 de noviembre de 2026";
-
 /** Whether each optional third party is switched on in this build (they are configured through the environment). */
 const ANALYTICS_ON = Boolean(publicConfig.gaId);
 const TURNSTILE_ON = Boolean(publicConfig.turnstileSiteKey);
@@ -33,7 +30,6 @@ export default function CookiesPage() {
   return (
     <LegalPage
       title="Política de cookies"
-      updated={UPDATED}
       intro="En esta política te explicamos qué son las cookies, cuáles usa esta web, para qué sirven, cuánto tiempo se conservan y cómo puedes aceptarlas, rechazarlas o cambiar tu decisión en cualquier momento."
     >
       <h2>1. Introducción y normativa aplicable</h2>
