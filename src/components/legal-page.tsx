@@ -2,14 +2,27 @@ import type { ReactNode } from "react";
 import { AlertIcon } from "./icons";
 import { COMPANY, hasPendingLegalData, pending } from "@/content/company";
 
+type LegalPageProps = {
+  title: string;
+  intro?: string;
+  /**
+   * Date of the page's own last update. A page that passes it is complete: it
+   * depends on no pending owner data, so the pending-data warning is not shown.
+   */
+  updated?: string;
+  children: ReactNode;
+};
+
 /** Layout of the legal pages: readable column, last review date and the pending-data warning. */
-export function LegalPage({ title, intro, children }: { title: string; intro?: string; children: ReactNode }) {
+export function LegalPage({ title, intro, updated, children }: LegalPageProps) {
   return (
     <main className="flex-1 px-4 py-14 sm:px-6 sm:py-20">
       <article className="sh-legal mx-auto max-w-3xl">
         <h1 className="text-4xl font-bold tracking-tight text-white">{title}</h1>
-        <p className="mt-3 text-sm text-slate-400">Última revisión: {pending(COMPANY.lastReview, "fecha de revisión")}</p>
-        {hasPendingLegalData() && (
+        <p className="mt-3 text-sm text-slate-400">
+          {updated ? `Última actualización: ${updated}` : `Última revisión: ${pending(COMPANY.lastReview, "fecha de revisión")}`}
+        </p>
+        {!updated && hasPendingLegalData() && (
           <div role="note" className="mt-8 flex gap-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-5 text-sm text-amber-100">
             <AlertIcon className="mt-0.5 size-5 shrink-0 text-amber-300" />
             <p>
