@@ -14,7 +14,7 @@ export const whatsappButton =
 /** Small label above a section title. */
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-block rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-blue-200">
+    <span className="acc-chip inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]">
       {children}
     </span>
   );
