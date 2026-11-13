@@ -89,7 +89,7 @@ function ConsentBanner() {
     <div
       role="region"
       aria-label="Aviso de cookies"
-      className="fixed inset-x-3 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[60] mx-auto max-w-3xl rounded-2xl border border-white/10 bg-slate-900/95 p-5 text-sm text-slate-300 shadow-2xl backdrop-blur-md md:bottom-4"
+      className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-[60] mx-auto max-w-3xl rounded-2xl border border-white/10 bg-slate-900/95 p-5 text-sm text-slate-300 shadow-2xl backdrop-blur-md md:bottom-4"
     >
       <p className="font-semibold text-white">Usamos cookies de analítica solo si las aceptas</p>
       <p className="mt-1.5">

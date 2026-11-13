@@ -12,7 +12,7 @@ import "./globals.css";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-/** Phones: use the whole screen (notch, home bar); the bottom bar adds the safe-area padding itself. */
+/** Phones: use the whole screen (notch, home bar); the menu panel adds the safe-area padding itself. */
 export const viewport: Viewport = { viewportFit: "cover", themeColor: "#020617" };
 
 /**

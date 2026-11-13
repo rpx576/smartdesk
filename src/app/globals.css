@@ -220,46 +220,91 @@ body {
   .sh-value:hover { transform: none; }
 }
 
-/* --- Phone app shell (bottom bar and sheet, see components/mobile-tabbar.tsx) --- */
-@media (max-width: 767px) {
-  body[data-tabbar] {
-    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
-  }
-  html { -webkit-tap-highlight-color: transparent; }
-}
-@keyframes sh-sheet-up {
-  from { transform: translateY(100%); }
-  to { transform: none; }
-}
-@keyframes sh-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 @keyframes sh-pop {
   from { opacity: 0; transform: translateY(-6px) scale(0.96); }
   to { opacity: 1; transform: none; }
 }
-.sh-sheet { animation: sh-sheet-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.sh-fade { animation: sh-fade-in 0.25s ease; }
-.sh-tab { position: relative; transition: color 0.2s ease, transform 0.15s ease; }
-.sh-tab:active { transform: scale(0.94); }
-.sh-tab-active::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: 1rem;
-  background: linear-gradient(180deg, rgb(59 130 246 / 0.28), rgb(59 130 246 / 0.1));
-  box-shadow: inset 0 0 0 1px rgb(96 165 250 / 0.35), 0 0 18px -4px rgb(59 130 246 / 0.6);
+
+/* --- Phone and tablet menu (components/mobile-menu.tsx) --- */
+@media (max-width: 1023px) {
+  html { -webkit-tap-highlight-color: transparent; }
 }
-/* Folding section of the phone menu: its height animates from 0 to the content. */
-.sh-acc { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s ease; }
-.sh-acc[data-open="true"] { grid-template-rows: 1fr; }
-.sh-acc > * { min-height: 0; overflow: hidden; }
+/* The panel unfolds from the header like a curtain, over a faint blueprint grid. */
+.sh-menu {
+  background:
+    radial-gradient(90% 50% at 100% 0%, rgb(37 99 235 / 0.22), transparent 70%),
+    linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px) 0 0 / 100% 2.5rem,
+    linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px) 0 0 / 2.5rem 100%,
+    #020617;
+  animation: sh-menu-open 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes sh-menu-open {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.sh-menu-item {
+  animation: sh-menu-item 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(0.12s + var(--i, 0) * 0.04s);
+}
+@keyframes sh-menu-item {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.sh-menu-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(148 163 184);
+}
+.sh-menu-eyebrow::before {
+  content: "";
+  width: 1.25rem;
+  height: 1px;
+  background: linear-gradient(90deg, #60a5fa, transparent);
+}
+.sh-menu-card {
+  border-radius: 1.25rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.015));
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
+}
+.sh-menu-card:hover { border-color: rgb(96 165 250 / 0.4); }
+.sh-menu-card:active { transform: scale(0.98); }
+.sh-menu-card[aria-current="page"] {
+  border-color: rgb(96 165 250 / 0.55);
+  box-shadow: 0 0 0 1px rgb(96 165 250 / 0.2), 0 12px 30px -16px rgb(37 99 235 / 0.7);
+}
+.sh-menu-row { transition: padding 0.2s ease; }
+.sh-menu-row[aria-current="page"] {
+  background: linear-gradient(90deg, rgb(59 130 246 / 0.12), transparent 70%);
+  box-shadow: inset 2px 0 0 #60a5fa;
+  padding-left: 0.75rem;
+}
+/* Menu button: three lines that fold into a cross. */
+.sh-burger { position: relative; display: block; width: 1.125rem; height: 0.75rem; }
+.sh-burger > span {
+  position: absolute;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease, width 0.3s ease;
+}
+.sh-burger > span:nth-child(1) { top: 0; }
+.sh-burger > span:nth-child(2) { top: calc(50% - 1px); width: 70%; }
+.sh-burger > span:nth-child(3) { bottom: 0; }
+.sh-burger[data-open="true"] > span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+.sh-burger[data-open="true"] > span:nth-child(2) { opacity: 0; width: 0; }
+.sh-burger[data-open="true"] > span:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
 @media (prefers-reduced-motion: reduce) {
-  .sh-acc { transition: none; }
-  .sh-sheet, .sh-fade { animation: none; }
-  .sh-tab, .sh-tab:active { transition: none; transform: none; }
+  .sh-menu, .sh-menu-item { animation: none; }
+  .sh-menu-card, .sh-menu-row, .sh-burger > span { transition: none; }
+  .sh-menu-card:active { transform: none; }
 }
 
 /* Smooth jumps to sections, except for people who prefer reduced motion. */

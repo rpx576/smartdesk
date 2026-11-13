@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { COMPANY_LINKS, SERVICE_LINKS, quoteHref, whatsappUrl } from "@/content/site";
-import { ChevronDownIcon, CloseIcon, MenuIcon, WhatsAppIcon } from "./icons";
+import { ChevronDownIcon, WhatsAppIcon } from "./icons";
 import { Logo } from "./logo";
-import { MobileTabBar } from "./mobile-tabbar";
+import { MenuButton, MobileMenu } from "./mobile-menu";
 
 /** Glass pill with light lines on its edges (`sh-nav-btn` in globals.css). */
 const pillClass =
@@ -21,24 +21,24 @@ function isActive(pathname: string, href: string) {
 
 /**
  * Website header (dark glass): logo, main menu with the services dropdown,
- * WhatsApp and the quote button. Tablets get a folding menu; phones use the
- * bottom bar. Menus close with Escape, a click outside or a change of page.
+ * WhatsApp and the quote button. Below 1024 px the menu button unfolds the
+ * full-screen menu (`mobile-menu.tsx`). Menus close with Escape, a click
+ * outside or a change of page.
  */
 export function SiteHeader() {
   const pathname = usePathname();
   const [openAt, setOpenAt] = useState<string | null>(null);
+  // Each menu belongs to the page it was opened on, so changing page closes it.
   const [mobileAt, setMobileAt] = useState<string | null>(null);
   const servicesOpen = openAt === pathname;
   const mobileOpen = mobileAt === pathname;
+  const closeMobile = useCallback(() => setMobileAt(null), []);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (!servicesOpen && !mobileOpen) return;
+    if (!servicesOpen) return;
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpenAt(null);
-        setMobileAt(null);
-      }
+      if (event.key === "Escape") setOpenAt(null);
     }
     function onClick(event: MouseEvent) {
       if (navRef.current && !navRef.current.contains(event.target as Node)) setOpenAt(null);
@@ -49,7 +49,7 @@ export function SiteHeader() {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onClick);
     };
-  }, [servicesOpen, mobileOpen]);
+  }, [servicesOpen]);
 
   const servicesActive = SERVICE_LINKS.some((link) => isActive(pathname, link.href));
 
@@ -61,7 +61,7 @@ export function SiteHeader() {
       >
         Saltar al contenido
       </a>
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link href="/" aria-label="Advanthor, ir al inicio" className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60">
             <Logo />
@@ -134,51 +134,12 @@ export function SiteHeader() {
             <Link href={quoteHref()} className={`${ctaClass} max-sm:hidden`}>
               Pedir presupuesto
             </Link>
-            <button
-              type="button"
-              aria-expanded={mobileOpen}
-              aria-controls="menu-tablet"
-              aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
-              onClick={() => setMobileAt(mobileOpen ? null : pathname)}
-              className="rounded-md p-2 text-white outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-blue-400/60 max-md:hidden lg:hidden"
-            >
-              {mobileOpen ? <CloseIcon className="size-6" /> : <MenuIcon className="size-6" />}
-            </button>
+            <MenuButton open={mobileOpen} onClick={() => setMobileAt(mobileOpen ? null : pathname)} />
           </div>
         </div>
-
-        {mobileOpen && (
-          <nav
-            id="menu-tablet"
-            aria-label="Menú principal"
-            className="sh-pop max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-white/10 bg-slate-950 px-4 pb-6 pt-2 lg:hidden"
-          >
-            <p className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Servicios</p>
-            <ul className="grid gap-1 sm:grid-cols-2">
-              {SERVICE_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="block rounded-lg px-3 py-2.5 outline-none hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-blue-400/60">
-                    <span className="block text-sm font-semibold text-white">{link.label}</span>
-                    <span className="block text-xs text-slate-400">{link.description}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <p className="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Empresa</p>
-            <ul className="flex flex-col gap-1">
-              {[{ label: "Inicio", href: "/" }, ...COMPANY_LINKS].map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-200 outline-none hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-blue-400/60">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        )}
       </header>
-      {/* Outside the header: its backdrop blur would turn the fixed bar into a child of the header. */}
-      <MobileTabBar />
+      {/* Outside the header: its backdrop blur would make the fixed panel a child of the header. */}
+      {mobileOpen && <MobileMenu pathname={pathname} onClose={closeMobile} />}
     </>
   );
 }
