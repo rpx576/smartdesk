@@ -307,6 +307,14 @@ body {
   .sh-menu-card:active { transform: none; }
 }
 
+/* --- Cookie notice and preferences (components/cookies/consent.tsx) --- */
+@media (prefers-reduced-motion: no-preference) {
+  .sh-consent { animation: sh-consent-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .sh-consent-backdrop { animation: sh-consent-fade 0.3s ease both; }
+}
+@keyframes sh-consent-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes sh-consent-fade { from { opacity: 0; } to { opacity: 1; } }
+
 /* --- Accent of each module (components/service-theme.ts): brand blue by default --- */
 :root {
   --acc: 96 165 250;

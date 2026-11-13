@@ -4,7 +4,8 @@ import { ConsentSettings } from "@/components/cookies/consent";
 import { LegalPage } from "@/components/legal-page";
 import { publicConfig } from "@/config/env";
 import { COMPANY } from "@/content/company";
-import { CONSENT_COOKIE, CONSENT_MAX_AGE_DAYS } from "@/lib/consent";
+import { COOKIE_CATEGORIES } from "@/content/cookies";
+import { CONSENT_MAX_AGE_DAYS } from "@/lib/consent";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -110,53 +111,19 @@ export default function CookiesPage() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>{CONSENT_COOKIE}</td>
-              <td>Propia</td>
-              <td>Técnica (cookie)</td>
-              <td>Guardar tu decisión sobre las cookies de análisis para no volver a preguntarte en cada visita.</td>
-              <td>{CONSENT_MAX_AGE_DAYS} días</td>
-            </tr>
-            <tr>
-              <td>smarthub.blog.saved</td>
-              <td>Propia</td>
-              <td>Técnica (localStorage)</td>
-              <td>
-                Recordar los artículos del blog que marcas para leer más tarde. Se guarda solo en tu navegador y no se envía
-                a ningún servidor.
-              </td>
-              <td>Hasta que la borres</td>
-            </tr>
-            <tr>
-              <td>Cloudflare Turnstile</td>
-              <td>Cloudflare, Inc.</td>
-              <td>Técnica de seguridad</td>
-              <td>
-                Comprobar que el formulario de contacto lo envía una persona y no un programa automático. Solo se carga en
-                la página de contacto. {status(TURNSTILE_ON)}.
-              </td>
-              <td>Durante la verificación</td>
-            </tr>
-            <tr>
-              <td>_ga</td>
-              <td>Google Ireland Ltd.</td>
-              <td>Análisis</td>
-              <td>
-                Distinguir visitantes de forma seudónima para elaborar estadísticas de uso de la web. Requiere tu
-                consentimiento. {status(ANALYTICS_ON)}.
-              </td>
-              <td>2 años</td>
-            </tr>
-            <tr>
-              <td>_ga_*</td>
-              <td>Google Ireland Ltd.</td>
-              <td>Análisis</td>
-              <td>
-                Mantener el estado de la sesión de Google Analytics 4 para medir las visitas. Requiere tu consentimiento.{" "}
-                {status(ANALYTICS_ON)}.
-              </td>
-              <td>2 años</td>
-            </tr>
+            {COOKIE_CATEGORIES.flatMap((category) => category.cookies).map((cookie) => (
+              <tr key={cookie.name}>
+                <td>{cookie.name}</td>
+                <td>{cookie.provider}</td>
+                <td>{cookie.kind}</td>
+                <td>
+                  {cookie.purpose}
+                  {cookie.service === "analytics" && " Requiere tu consentimiento."}
+                  {cookie.service && ` ${status(cookie.service === "analytics" ? ANALYTICS_ON : TURNSTILE_ON)}.`}
+                </td>
+                <td>{cookie.duration}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -188,14 +155,16 @@ export default function CookiesPage() {
 
       <h2>7. Consentimiento</h2>
       <p>
-        Cuando la web usa cookies que requieren consentimiento, en tu primera visita aparece un aviso con tres opciones con
-        el mismo protagonismo: <strong>Aceptar</strong>, <strong>Rechazar</strong> y <strong>Configurar</strong>. Hasta que
-        elijas, solo se usan las cookies técnicas. Seguir navegando, desplazarte por la página o cerrar el aviso no se
-        considera aceptación.
+        En tu primera visita aparece un aviso de cookies con tres opciones del mismo tamaño y protagonismo:{" "}
+        <strong>Aceptar todas</strong>, <strong>Rechazar todas</strong> y <strong>Configurar</strong>. En «Configurar» puedes
+        elegir por categorías y ver las cookies de cada una; ninguna casilla opcional viene marcada. Hasta que elijas, solo
+        se usan las cookies técnicas. Seguir navegando o desplazarte por la página no se considera aceptación, y cerrar el
+        aviso con la «X» equivale a rechazar las cookies opcionales. El aviso no te impide usar la web.
       </p>
       <p>
-        Tu decisión se guarda durante {CONSENT_MAX_AGE_DAYS} días. Pasado ese plazo te volveremos a preguntar. Rechazar las
-        cookies de análisis no limita el acceso a ningún contenido ni servicio de la web.
+        Tu decisión se guarda durante {CONSENT_MAX_AGE_DAYS} días. Pasado ese plazo te volveremos a preguntar, y también si
+        la web empieza a usar cookies de análisis después de que hayas elegido. Rechazar las cookies de análisis no limita
+        el acceso a ningún contenido ni servicio de la web.
       </p>
       <h3>7.1. Gestiona tu consentimiento</h3>
       <p>
