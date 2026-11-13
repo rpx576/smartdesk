@@ -71,7 +71,9 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
 
   const save = useCallback(
     (analytics: boolean) => {
-      const next: Consent = { analytics: hasOptional && analytics, offered: hasOptional, decidedAt: Date.now() };
+      // The preference is kept as chosen, but analytics only loads when the site offers it; a choice
+      // made before that is asked again (`effectiveConsent`).
+      const next: Consent = { analytics, offered: hasOptional, decidedAt: Date.now() };
       const secure = window.location.protocol === "https:" ? "; Secure" : "";
       document.cookie = `${CONSENT_COOKIE}=${serializeConsent(next)}; Max-Age=${CONSENT_MAX_AGE_DAYS * 86_400}; Path=/; SameSite=Lax${secure}`;
       const hadAnalytics = consent?.analytics === true;
@@ -159,14 +161,14 @@ function ConsentBanner() {
         .
       </p>
       <div className="mt-5 grid grid-cols-3 gap-2">
+        <button type="button" onClick={() => save(true)} className={choiceButton}>
+          Aceptar
+        </button>
         <button type="button" onClick={() => save(false)} className={choiceButton}>
-          Rechazar todas
+          Rechazar
         </button>
         <button type="button" onClick={openPreferences} className={choiceButton}>
-          Configurar
-        </button>
-        <button type="button" onClick={() => save(true)} className={choiceButton}>
-          Aceptar todas
+          Ver preferencias
         </button>
       </div>
     </section>
@@ -249,26 +251,33 @@ function PreferencesForm({ onDone }: { onDone?: () => void }) {
                     <Switch checked disabled label="Cookies técnicas: siempre activas" />
                     <span className="text-[11px] font-semibold text-emerald-300">Siempre activas</span>
                   </span>
-                ) : hasOptional ? (
-                  <Switch checked={analytics} onChange={(value) => { setAnalytics(value); setSaved(false); }} label="Cookies de análisis" />
                 ) : (
-                  <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-300">No utilizado actualmente</span>
+                  <span className="flex shrink-0 flex-col items-end gap-1.5">
+                    <Switch checked={analytics} onChange={(value) => { setAnalytics(value); setSaved(false); }} label="Cookies de análisis" />
+                    <span className={`text-[11px] font-semibold ${analytics ? "text-blue-300" : "text-slate-400"}`}>{analytics ? "Activadas" : "Desactivadas"}</span>
+                  </span>
                 )}
               </div>
+              {isAnalytics && !hasOptional && (
+                <p className="mt-2 text-xs text-slate-400">
+                  Ahora mismo la web no instala cookies de análisis. Guardamos tu preferencia y, si algún día las activamos, te
+                  volveremos a preguntar antes.
+                </p>
+              )}
               <CookieList category={category} />
             </li>
           );
         })}
       </ul>
       <div className="mt-5 grid gap-2 sm:grid-cols-3">
+        <button type="button" onClick={() => decide(true)} className={choiceButton}>
+          Aceptar todas
+        </button>
         <button type="button" onClick={() => decide(false)} className={choiceButton}>
           Rechazar todas
         </button>
         <button type="button" onClick={() => decide(analytics)} className={`min-h-11 rounded-full bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 ${focusRing}`}>
           Guardar preferencias
-        </button>
-        <button type="button" onClick={() => decide(true)} className={choiceButton}>
-          Aceptar todas
         </button>
       </div>
       <p role="status" className="mt-3 min-h-5 text-sm text-emerald-300">
@@ -284,7 +293,7 @@ function PreferencesForm({ onDone }: { onDone?: () => void }) {
   );
 }
 
-/** "Configurar" from the banner or the footer: a dialog over the page, opened by the visitor. */
+/** "Ver preferencias" from the banner: a dialog over the page, opened by the visitor. */
 function PreferencesDialog({ onClose }: { onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();

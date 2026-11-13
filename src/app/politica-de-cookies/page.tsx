@@ -156,8 +156,8 @@ export default function CookiesPage() {
       <h2>7. Consentimiento</h2>
       <p>
         En tu primera visita aparece un aviso de cookies con tres opciones del mismo tamaño y protagonismo:{" "}
-        <strong>Aceptar todas</strong>, <strong>Rechazar todas</strong> y <strong>Configurar</strong>. En «Configurar» puedes
-        elegir por categorías y ver las cookies de cada una; ninguna casilla opcional viene marcada. Hasta que elijas, solo
+        <strong>Aceptar</strong>, <strong>Rechazar</strong> y <strong>Ver preferencias</strong>. En «Ver preferencias» puedes
+        activar o desactivar cada categoría opcional y ver las cookies de cada una; ninguna viene activada. Hasta que elijas, solo
         se usan las cookies técnicas. Seguir navegando o desplazarte por la página no se considera aceptación, y cerrar el
         aviso con la «X» equivale a rechazar las cookies opcionales. El aviso no te impide usar la web.
       </p>

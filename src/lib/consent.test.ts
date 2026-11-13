@@ -35,6 +35,13 @@ describe("consent cookie", () => {
     assert.equal(effectiveConsent(null, false), null);
   });
 
+  it("keeps an analytics preference saved while the site had no analytics, but does not apply it later", () => {
+    const early = { analytics: true, offered: false, decidedAt: now };
+    assert.deepEqual(parseConsent(serializeConsent(early), now), early);
+    assert.deepEqual(effectiveConsent(early, false), early);
+    assert.equal(effectiveConsent(early, true), null);
+  });
+
   it("reads one cookie", () => {
     assert.equal(readCookie("a=1; adv_consent=v2.0.1.123; b=2", "adv_consent"), "v2.0.1.123");
     assert.equal(readCookie("a=1", "adv_consent"), null);
