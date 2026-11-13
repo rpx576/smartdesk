@@ -1,0 +1,11 @@
+# Netlify: Advanthor website. Settings and secrets live in the Netlify UI (Site configuration > Environment variables),
+# never in this file. See .env.example for the full list.
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # Search engines stay out until this is set to "on" (and the site is redeployed).
+  # SITE_INDEXING = "on"

@@ -3,7 +3,10 @@ export type ErrorCode =
   | "UNAUTHENTICATED"
   | "FORBIDDEN"
   | "NOT_FOUND"
-  | "CONFLICT";
+  | "CONFLICT"
+  | "RATE_LIMITED"
+  | "NOT_CONFIGURED"
+  | "DELIVERY_FAILED";
 
 /**
  * Expected, client-facing error. Its message is safe to return in a response;
@@ -48,5 +51,11 @@ export class NotFoundError extends AppError {
 export class ConflictError extends AppError {
   constructor(message = "Resource already exists") {
     super("CONFLICT", 409, message);
+  }
+}
+
+export class TooManyRequestsError extends AppError {
+  constructor(message = "Too many requests") {
+    super("RATE_LIMITED", 429, message);
   }
 }

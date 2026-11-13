@@ -1,5 +1,5 @@
 {
-  "name": "smartdesk",
+  "name": "advanthor-web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,34 +9,21 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "test:watch": "node --import tsx --test --watch \"src/**/*.test.ts\"",
-    "postinstall": "prisma generate",
-    "db:up": "docker compose up -d --wait",
-    "db:down": "docker compose down",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
-    "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "test:watch": "node --import tsx --test --watch \"src/**/*.test.ts\""
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.10.0",
-    "@prisma/client": "^7.10.0",
-    "next": "16.3.8",
-    "next-auth": "5.0.0-beta.32",
+    "next": "16.4.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.19.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "dotenv": "^18.0.5",
     "eslint": "^9",
-    "eslint-config-next": "16.3.8",
-    "prisma": "^7.10.0",
+    "eslint-config-next": "16.4.6",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
